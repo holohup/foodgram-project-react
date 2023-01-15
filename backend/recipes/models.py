@@ -4,27 +4,27 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-class Ingridient(models.Model):
+class Ingredient(models.Model):
     name = models.CharField(
         max_length=250,
         null=False,
         blank=False,
-        verbose_name='Ingridient name'
+        verbose_name='Ingredient name'
         )
-    measurement = models.CharField(
+    measurement_unit = models.CharField(
         max_length=100,
         verbose_name='Measurement unit'
     )
 
-    def __str__(self):
-        return f'{self.name}, {self.measurement}'
+    def __repr__(self):
+        return f'{self.name}, {self.measurement_unit}'
 
     class Meta:
-        verbose_name = 'Ingridient'
-        verbose_name_plural = 'Ingridients'
+        verbose_name = 'Ingredient'
+        verbose_name_plural = 'Ingredients'
         constraints = [
             models.UniqueConstraint(
-                fields=['name', 'measurement'],
+                fields=['name', 'measurement_unit'],
                 name='Unique name and measurement units combo'
             ),
         ]
@@ -52,9 +52,10 @@ class Recipe(models.Model):
         db_index=True
     )
     cooking_time = models.PositiveIntegerField(verbose_name='Cooking Time')
-    ingridients = models.ManyToManyField(
-        Ingridient, through='RecipeIngridients'
+    ingredients = models.ManyToManyField(
+        Ingredient, through='RecipeIngredients'
     )
+    times_bookmarked = models.PositiveIntegerField('Times bookmarked')
 
     def __str__(self):
         return self.title
@@ -66,16 +67,36 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=64, verbose_name='Tag name')
-    color = models.CharField(max_length=7, verbose_name='color')
-    slug = models.SlugField(verbose_name='slug')
-    recipe = models.ManyToManyField(Recipe)
+    name = models.CharField(
+        max_length=64,
+        verbose_name='Tag name',
+        blank=False,
+        null=False,
+        unique=True
+    )
+    color = models.CharField(
+        max_length=7,
+        verbose_name='color',
+        blank=False,
+        null=False,
+        unique=True
+    )
+    slug = models.SlugField(
+        verbose_name='slug',
+        blank=False,
+        null=False,
+        unique=True
+    )
+    recipe = models.ManyToManyField(Recipe, related_name='tags', blank=True)
+
+    def __repr___(self):
+        return self.name
 
 
-class RecipeIngridients(models.Model):
+class RecipeIngredients(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingridient = models.ForeignKey(Ingridient, on_delete=models.CASCADE)
-    amount = models.PositiveIntegerField(verbose_name='Ingridient amount')
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.PositiveIntegerField(verbose_name='Ingredient amount')
 
-    def __str__(self):
-        return f'{self.ingridient} for {self.recipe}'
+    def __repr__(self):
+        return f'{self.ingredient} for {self.recipe}'

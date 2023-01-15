@@ -7,11 +7,12 @@ from .forms import CustomUserCreationForm, CustomUserChangeForm
 CustomUser = get_user_model()
 
 
+@admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     model = CustomUser
-    list_display = ['email', 'username',]
-
-
-admin.site.register(CustomUser, CustomUserAdmin)
+    list_display_links = ('username',)
+    list_filter = ('email', 'username')
+    list_display = ('email', 'username', 'is_active')
+    list_editable = ('is_active',)
