@@ -133,3 +133,5 @@ dmypy.json
 
 # files for local development
 test.sh
+creds.txt
+docker-compose_dev.yml
