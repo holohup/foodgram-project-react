@@ -4,13 +4,13 @@ from django.contrib.auth import get_user_model
 
 
 class CustomUser(AbstractUser):
-    pass
+    first_name = models.CharField(max_length=150)
 
 
 User = get_user_model()
 
 
-class Follow(models.Model):
+class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
