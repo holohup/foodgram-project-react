@@ -9,12 +9,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print('Загрузка данных...')
-        with open('../data/ingredients.csv', encoding='utf-8', newline='') as ifile:
+        with open(
+            '../data/ingredients.csv', encoding='utf-8', newline=''
+        ) as ifile:
             reader = DictReader(ifile, fieldnames=['name', 'measurement_unit'])
-            # for row in reader:
-            #     print(row['name'])
-            #     print(*row, sep='AA')
-            bulk_data = [Ingredient(name=row['name'], measurement_unit=row['measurement_unit']) for row in reader]
-            print(bulk_data)
-            # print(bulk_data)
+            bulk_data = [
+                Ingredient(
+                    name=row['name'], measurement_unit=row['measurement_unit']
+                )
+                for row in reader
+            ]
             Ingredient.objects.bulk_create(bulk_data)

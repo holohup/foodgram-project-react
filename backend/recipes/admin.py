@@ -6,6 +6,7 @@ from .models import Recipe, Tag, Ingredient
 
 admin.site.unregister(Group)
 
+
 @admin.register(Tag)
 class TagsAdmin(admin.ModelAdmin):
     list_display = ('name', 'color', 'slug')
@@ -29,3 +30,5 @@ class IngredientAdmin(admin.ModelAdmin):
     # autocomplete_fields = ('tag',)
     list_editable = ('measurement_unit', )
     # list_filter = ('title', 'tag', 'author')
+    list_per_page = 200
+    list_max_show_all = 5000
