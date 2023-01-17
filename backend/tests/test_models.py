@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient
@@ -53,7 +54,9 @@ class CustomUserTests(TestCase):
         self.assertEqual(user.first_name, long_firstname)
 
 
-class HumanReadableTest(TestCase):
+class TestPresets(TestCase):
+    """Class with set up data to be inherited from."""
+
     @classmethod
     def setUpTestData(cls):
         cls.ingredient = Ingredient.objects.create(name='Pumpkin')
@@ -64,12 +67,16 @@ class HumanReadableTest(TestCase):
             name='Potato gnocchi',
             text='You and me and the devil make three',
             cooking_time=15,
+            image='test.jpg'
         )
         cls.recipeingredient = RecipeIngredient.objects.create(
             recipe=cls.recipe, ingredient=cls.ingredient, amount=1
         )
         cls.recipe.ingredients.add(cls.ingredient)
         cls.recipe.tags.add(cls.tag)
+
+
+class HumanReadableTest(TestPresets):
 
     def test_models_have_correct_object_names(self):
         """Model returns expected str."""
@@ -105,3 +112,14 @@ class HumanReadableTest(TestCase):
                     self.recipe._meta.get_field(field).verbose_name,
                     expected_value
                 )
+
+
+class ModelValidationTests(TestPresets):
+    """Are the validators in models working?"""
+
+    def test_min_cookingtime(self):
+        self.recipe.full_clean()
+        self.recipe.cooking_time = 0
+        self.recipe.save()
+        with self.assertRaises(ValidationError):
+            self.recipe.full_clean()
