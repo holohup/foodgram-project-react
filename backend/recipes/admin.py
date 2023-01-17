@@ -23,13 +23,16 @@ class TagsAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author')
-    list_display_links = ('title', )
-    # autocomplete_fields = ('tags',)
-    # list_editable = ('title', 'author', 'tags')
-    list_filter = ('title', 'tags__name', 'author')
+    list_display = ('name', 'author', 'recipe_tags', 'favorited')
+    list_filter = ('name', 'tags', 'author')
+    filter_horizontal = ('tags',)
     inlines = [RecipeIngredientInline]
-    # autocomplete_fields = ([RecipeIngredientInline])
+
+    def recipe_tags(self, obj):
+        return [tag.name for tag in obj.tags.all()]
+
+    def favorited(self, obj):
+        return Favorite.objects.filter(recipe=obj).count()
 
 
 @admin.register(Ingredient)

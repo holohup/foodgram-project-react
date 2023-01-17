@@ -6,7 +6,7 @@ User = get_user_model()
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=64,
+        max_length=200,
         verbose_name='Tag name',
         unique=True
     )
@@ -17,10 +17,11 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         verbose_name='slug',
-        unique=True
+        unique=True,
+        max_length=200
     )
 
-    def __str___(self):
+    def __str__(self):
         return self.name
 
 
@@ -56,7 +57,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Author',
     )
-    title = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200, unique=True)
     image = models.ImageField(
         'Picture',
         upload_to='recipes/',
@@ -73,7 +74,11 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient', blank=False
     )
-    tags = models.ManyToManyField(Tag, related_name='recipes', blank=True)
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='recipes',
+        blank=True,
+        verbose_name='Tags')
 
     def __str__(self):
         return self.title
