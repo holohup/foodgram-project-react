@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import Subscription
 
 CustomUser = get_user_model()
 
@@ -16,3 +17,18 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('email', 'username')
     list_display = ('email', 'username', 'is_active')
     list_editable = ('is_active',)
+    fieldsets = (
+        ('Account', {'fields': ('username', 'password')}),
+        (('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+        (('Permissions'), {
+            'fields': ('is_active', 'is_superuser',),
+        }),
+    )
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_filter = ('author', 'user')
+    list_display = ('id', 'user', 'author',)
+    list_editable = ('author', 'user')
+    search_fields = ('author__username', 'user__username')

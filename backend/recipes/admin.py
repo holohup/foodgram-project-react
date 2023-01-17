@@ -1,8 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.utils.html import format_html
 
-from .models import Recipe, Tag, Ingredient, Favorite, RecipeIngredient
-
+from .models import (
+    Recipe, Tag, Ingredient, Favorite,
+    RecipeIngredient, ShoppingCart
+)
 
 admin.site.unregister(Group)
 
@@ -11,14 +14,17 @@ class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 1
     autocomplete_fields = ('ingredient', )
-    # search_fields = ('ingredients',)
 
 
 @admin.register(Tag)
 class TagsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'color', 'slug')
+    list_display = ('name', 'colored', 'slug')
     list_display_links = ('name',)
-    # list_editable = ('name', )
+
+    def colored(self, obj):
+        return format_html(
+            f'<span style="color: {obj.color};">{obj.color}</span>'
+        )
 
 
 @admin.register(Recipe)
@@ -27,6 +33,11 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('name', 'tags', 'author')
     filter_horizontal = ('tags',)
     inlines = [RecipeIngredientInline]
+    # fieldsets = (
+    #     (None, {
+    #         'fields': ('name', 'author',),
+    #     }),
+    # )
 
     def recipe_tags(self, obj):
         return [tag.name for tag in obj.tags.all()]
@@ -39,9 +50,23 @@ class RecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     list_display_links = ('name',)
-    # autocomplete_fields = ('tag',)
     list_editable = ('measurement_unit', )
-    # list_filter = ('title', 'tag', 'author')
     search_fields = ('name',)
+    list_filter = ('name', )
     list_per_page = 200
     list_max_show_all = 5000
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
+
+
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ShoppingCart)
+class ShoppingCartAdmin(admin.ModelAdmin):
+    pass
