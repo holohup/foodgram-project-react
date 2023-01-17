@@ -87,30 +87,21 @@ class HumanReadableTest(TestCase):
             with self.subTest(expectation=expectation):
                 self.assertEqual(expectation, string)
 
-    # def test_verbose_name(self):
-    #     """Правильные, читабельные названия полей."""
+    def test_verbose_name(self):
+        """Human-readable field verbose names."""
 
-    #     field_verboses = {
-    #         'text': 'Текст поста',
-    #         'pub_date': 'Дата публикации',
-    #         'group': 'Группа',
-    #         'author': 'Автор',
-    #     }
-    #     for field, expected_value in field_verboses.items():
-    #         with self.subTest(field=field):
-    #             self.assertEqual(
-    #                 self.post._meta.get_field(field).verbose_name,
-    #                 expected_value
-    #             )
-
-    # def test_help_text(self):
-    #     """Хелпы человекопонятны."""
-
-    #     field_verboses = {
-    #         'text': 'Введите текст поста',
-    #         'group': 'Группа, к которой будет относиться пост',
-    #     }
-    #     for field, expected_value in field_verboses.items():
-    #         with self.subTest(field=field):
-    #             self.assertEqual(
-    #                 self.post._meta.get_field(field).help_text, expected_value)
+        field_verboses = {
+            'author': 'Author',
+            'name': 'name',
+            'image': 'Picture',
+            'text': 'Cooking algorithm',
+            'ingredients': 'Ingredients',
+            'cooking_time': 'Cooking Time',
+            'tags': 'Tags'
+        }
+        for field, expected_value in field_verboses.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    self.recipe._meta.get_field(field).verbose_name,
+                    expected_value
+                )

@@ -57,7 +57,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Author',
     )
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200, unique=True, verbose_name='name')
     image = models.ImageField(
         'Picture',
         upload_to='recipes/',
@@ -72,7 +72,10 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveIntegerField(verbose_name='Cooking Time')
     ingredients = models.ManyToManyField(
-        Ingredient, through='RecipeIngredient', blank=False
+        Ingredient,
+        through='RecipeIngredient',
+        blank=False,
+        verbose_name='Ingredients'
     )
     tags = models.ManyToManyField(
         Tag,
