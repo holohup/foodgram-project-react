@@ -8,7 +8,6 @@ class CustomUser(AbstractUser):
     last_name = models.CharField(('last name'), max_length=150, blank=False)
     email = models.EmailField(('email address'), blank=False)
 
-
     class Meta:
         verbose_name = 'user'
         verbose_name_plural = 'users'
