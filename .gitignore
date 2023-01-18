@@ -136,4 +136,4 @@ test.sh
 creds.txt
 docker-compose_dev.yml
 
-backend/media/*.jpg
+backend/media/recipes/*.jpg
