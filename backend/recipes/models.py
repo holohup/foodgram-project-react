@@ -30,6 +30,7 @@ class Ingredient(models.Model):
     name = models.CharField(
         max_length=250,
         verbose_name='Ingredient name',
+        db_index=True
         )
     measurement_unit = models.CharField(
         max_length=100,
@@ -87,8 +88,26 @@ class Recipe(models.Model):
         blank=True,
         verbose_name='Tags')
 
+    # bookmarkers = models.ManyToManyField(
+    #     User,
+    #     blank=True,
+    #     verbose_name='Bookmarkers',
+    #     related_name='bookmarked'
+    # )
+
+    # carts = models.ManyToManyField(
+    #     User,
+    #     blank=True,
+    #     verbose_name='Shoppers',
+    #     related_name='added_to_cart'
+    # )
+
     def __str__(self):
         return self.name
+
+    @property
+    def favorited(self):
+        return Favorite.objects.filter(recipe=self).count()
 
     class Meta:
         verbose_name = 'Recipe'
@@ -109,7 +128,8 @@ class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Bookmarking user'
+        verbose_name='Bookmarking user',
+        related_name='favorite'
     )
     recipe = models.ForeignKey(
         Recipe,

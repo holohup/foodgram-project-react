@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.test import TestCase
 
-from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient
+from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient, Favorite
+from users.models import Subscription
 
 User = get_user_model()
 
@@ -61,7 +63,8 @@ class TestPresets(TestCase):
     def setUpTestData(cls):
         cls.ingredient = Ingredient.objects.create(name='Pumpkin')
         cls.tag = Tag.objects.create(name='breakfast')
-        cls.user = User.objects.create_user(username='auth')
+        cls.user = User.objects.create_user(username='user1')
+        cls.user2 = User.objects.create_user(username='user2')
         cls.recipe = Recipe.objects.create(
             author=cls.user,
             name='Potato gnocchi',
@@ -79,7 +82,7 @@ class TestPresets(TestCase):
 class HumanReadableTest(TestPresets):
 
     def test_models_have_correct_object_names(self):
-        """Model returns expected str."""
+        """Models return expected str."""
 
         expected_str = {
             self.recipe.name: str(self.recipe),
@@ -118,8 +121,30 @@ class ModelValidationTests(TestPresets):
     """Are the validators in models working?"""
 
     def test_min_cookingtime(self):
+        """As per redoc task, cooking time >= 1."""
+
         self.recipe.full_clean()
         self.recipe.cooking_time = 0
         self.recipe.save()
         with self.assertRaises(ValidationError):
             self.recipe.full_clean()
+
+    def test_self_subscription(self):
+        """Self subscription constraint on the models level."""
+
+        Subscription.objects.create(user=self.user, author=self.user2)
+        with self.assertRaises(IntegrityError):
+            Subscription.objects.create(user=self.user, author=self.user)
+
+
+class CustomFunctionsTests(TestPresets):
+    """Do custom models functions work as intented?"""
+
+    def test_favorited(self):
+        """Checks if Recipe.favorited works."""
+
+        self.assertEquals(self.recipe.favorited, 0)
+        favorite = Favorite.objects.create(recipe=self.recipe, user=self.user)
+        self.assertEquals(self.recipe.favorited, 1)
+        favorite.delete()
+        self.assertEquals(self.recipe.favorited, 0)

@@ -4,7 +4,19 @@ from django.contrib.auth import get_user_model
 
 
 class CustomUser(AbstractUser):
-    first_name = models.CharField(max_length=150)
+    first_name = models.CharField(('first name'), max_length=150, blank=False)
+    last_name = models.CharField(('last name'), max_length=150, blank=False)
+    email = models.EmailField(('email address'), blank=False)
+    # subscriptions = models.ManyToManyField(
+    #     'CustomUser',
+    #     blank=True,
+    #     verbose_name='follower',
+    #     related_name='author'
+    # )
+
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
 
 
 User = get_user_model()
@@ -33,5 +45,9 @@ class Subscription(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['author', 'user'], name='Unique subscription'
+            ),
+            models.CheckConstraint(
+                name='Prevent self subscription',
+                check=~models.Q(user=models.F('author')),
             ),
         ]
