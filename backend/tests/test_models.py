@@ -93,7 +93,12 @@ class HumanReadableTest(TestPresets):
                 self.ingredient
             ),
             self.user.username: str(self.recipe.author.username),
-            f'{self.ingredient} for {self.recipe}': str(self.recipeingredient)
+            (
+                f'{self.recipeingredient.ingredient.name}, '
+                f'{self.recipeingredient.amount} '
+                f'{self.recipeingredient.ingredient.measurement_unit} '
+                f'for {self.recipe}'
+            ): str(self.recipeingredient)
         }
         for expectation, string in expected_str.items():
             with self.subTest(expectation=expectation):
@@ -170,3 +175,4 @@ class CustomFunctionsTests(TestPresets):
         self.assertEquals(self.recipe.favorited, 1)
         favorite.delete()
         self.assertEquals(self.recipe.favorited, 0)
+

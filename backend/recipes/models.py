@@ -107,7 +107,10 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(verbose_name='Ingredient amount')
 
     def __str__(self):
-        return f'{self.ingredient} for {self.recipe}'
+        return (
+            f'{self.ingredient.name}, {self.amount} '
+            f'{self.ingredient.measurement_unit} for {self.recipe}'
+        )
 
 
 class Favorite(models.Model):
