@@ -51,7 +51,6 @@ class RecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     list_display_links = ('name',)
-    list_editable = ('measurement_unit', )
     search_fields = ('name',)
     list_filter = ('name', )
     list_per_page = 200

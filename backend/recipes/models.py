@@ -88,20 +88,6 @@ class Recipe(models.Model):
         blank=True,
         verbose_name='Tags')
 
-    # bookmarkers = models.ManyToManyField(
-    #     User,
-    #     blank=True,
-    #     verbose_name='Bookmarkers',
-    #     related_name='bookmarked'
-    # )
-
-    # carts = models.ManyToManyField(
-    #     User,
-    #     blank=True,
-    #     verbose_name='Shoppers',
-    #     related_name='added_to_cart'
-    # )
-
     def __str__(self):
         return self.name
 

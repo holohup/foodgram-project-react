@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient, Favorite
+from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient, Favorite, ShoppingCart
 from users.models import Subscription
 
 User = get_user_model()
@@ -135,6 +135,26 @@ class ModelValidationTests(TestPresets):
         Subscription.objects.create(user=self.user, author=self.user2)
         with self.assertRaises(IntegrityError):
             Subscription.objects.create(user=self.user, author=self.user)
+
+    def test_models_uniquenes(self):
+        """Checks unique constraints.
+        1. A Recipe can be added to favorites only once.
+        2. It can be bookmarked only once.
+        3. Only one user-author subscription can be made."""
+
+        self.assertEqual(Favorite.objects.count(), 0)
+        self.assertEqual(ShoppingCart.objects.count(), 0)
+        self.assertEqual(Subscription.objects.count(), 0)
+        Favorite.objects.create(recipe=self.recipe, user=self.user)
+        ShoppingCart.objects.create(recipe=self.recipe, user=self.user)
+        Subscription.objects.create(user=self.user, author=self.user2)
+        self.assertEqual(Favorite.objects.count(), 1)
+        self.assertEqual(ShoppingCart.objects.count(), 1)
+        self.assertEqual(Subscription.objects.count(), 1)
+        with self.assertRaises(IntegrityError):
+            Favorite.objects.create(recipe=self.recipe, user=self.user)
+            ShoppingCart.objects.create(recipe=self.recipe, user=self.user)
+            Subscription.objects.create(user=self.user, author=self.user2)
 
 
 class CustomFunctionsTests(TestPresets):
