@@ -6,14 +6,16 @@ from rest_framework.test import APITestCase
 User = get_user_model()
 
 
-class UserViewSetTest(APITestCase):
+class UnauthorizedUserTests(APITestCase):
     def setUp(self):
         """Tests presets."""
         pass
 
-    def test_get_token(self):
+    def test_get_token_and_logout(self):
+        """Check if we can obtain a working token, and we can delete it."""
+
         user = User.objects.create(
-            username='testUser', email='hello@space.com'
+            email='hello@space.com'
         )
         user.set_password('testPassword')
         user.save()
@@ -22,8 +24,15 @@ class UserViewSetTest(APITestCase):
             'password': 'testPassword',
         }
         response = self.client.post(reverse('get_token'), data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('auth_token', response.data)
         token = response.data['auth_token']
         self.assertIsNotNone(token)
-        # TODO: Create a verify point to check if the token is working
+        logout_url = reverse('logout')
+        self.assertEqual(
+            self.client.post(logout_url, {}).status_code,
+            status.HTTP_401_UNAUTHORIZED)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+        self.assertEqual(
+            self.client.post(logout_url, {}).status_code,
+            status.HTTP_204_NO_CONTENT)

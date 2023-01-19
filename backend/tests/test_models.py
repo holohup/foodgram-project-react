@@ -183,8 +183,8 @@ class CustomFunctionsTests(TestPresets):
     def test_favorited(self):
         """Checks if Recipe.favorited works."""
 
-        self.assertEquals(self.recipe.favorited, 0)
+        self.assertEqual(self.recipe.favorited, 0)
         favorite = Favorite.objects.create(recipe=self.recipe, user=self.user)
-        self.assertEquals(self.recipe.favorited, 1)
+        self.assertEqual(self.recipe.favorited, 1)
         favorite.delete()
-        self.assertEquals(self.recipe.favorited, 0)
+        self.assertEqual(self.recipe.favorited, 0)

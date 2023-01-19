@@ -1,12 +1,14 @@
 import base64
 import datetime
 
+from django.contrib.auth import get_user_model, authenticate
 from django.core.files.base import ContentFile
-
+from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
+
 from recipes.models import Recipe
-from django.contrib.auth import get_user_model
+
 User = get_user_model()
 
 
@@ -22,7 +24,7 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class PostSerializer(serializers.ModelSerializer):
+class RecipeSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
@@ -42,5 +44,22 @@ class PostSerializer(serializers.ModelSerializer):
         )
 
 
-def get_tokens_for_user(user):
-    return {'auth_token': str(RefreshToken.for_user(user).access_token)}
+class CustomTokenSerializer(serializers.Serializer):
+
+    email = serializers.EmailField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    auth_token = serializers.CharField(required=False)
+
+    def validate(self, data):
+        user = authenticate(
+            username=get_object_or_404(User, email=data['email']).username,
+            password=data['password'],
+        )
+        if user is not None:
+            return user
+        raise serializers.ValidationError(
+            f'Wrong password: {data["password"]}.'
+        )
+
+    def save(self):
+        return Token.objects.get_or_create(user=self.validated_data)
