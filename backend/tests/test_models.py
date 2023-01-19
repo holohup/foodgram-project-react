@@ -147,11 +147,13 @@ class ModelValidationTests(TestPresets):
         """Checks unique constraints.
         1. A Recipe can be added to favorites only once.
         2. It can be bookmarked only once.
-        3. Only one user-author subscription can be made."""
+        3. Only one user-author subscription can be made.
+        4. Only unique recipe-ingridient entries can be made."""
 
         self.assertEqual(Favorite.objects.count(), 0)
         self.assertEqual(ShoppingCart.objects.count(), 0)
         self.assertEqual(Subscription.objects.count(), 0)
+        self.assertEqual(RecipeIngredient.objects.count(), 1)
         Favorite.objects.create(recipe=self.recipe, user=self.user)
         ShoppingCart.objects.create(recipe=self.recipe, user=self.user)
         Subscription.objects.create(user=self.user, author=self.user2)
@@ -162,6 +164,9 @@ class ModelValidationTests(TestPresets):
             Favorite.objects.create(recipe=self.recipe, user=self.user)
             ShoppingCart.objects.create(recipe=self.recipe, user=self.user)
             Subscription.objects.create(user=self.user, author=self.user2)
+            RecipeIngredient.objects.create(
+                recipe=self.recipe, ingredient=self.ingredient, amount=10
+            )
 
 
 class CustomFunctionsTests(TestPresets):
@@ -175,4 +180,3 @@ class CustomFunctionsTests(TestPresets):
         self.assertEquals(self.recipe.favorited, 1)
         favorite.delete()
         self.assertEquals(self.recipe.favorited, 0)
-

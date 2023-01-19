@@ -69,4 +69,3 @@ class TestShoppingList(TestCase):
         result = get_grocery_list(self.user2)
         self.assertIsInstance(result, dict)
         self.assertDictEqual(result, {})
-

@@ -1,26 +1,17 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
+from django.utils.html import mark_safe
 
 User = get_user_model()
 
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=200,
-        verbose_name='Tag name',
-        unique=True
+        max_length=200, verbose_name='Tag name', unique=True
     )
-    color = models.CharField(
-        max_length=7,
-        verbose_name='color',
-        unique=True
-    )
-    slug = models.SlugField(
-        verbose_name='slug',
-        unique=True,
-        max_length=200
-    )
+    color = models.CharField(max_length=7, verbose_name='color', unique=True)
+    slug = models.SlugField(verbose_name='slug', unique=True, max_length=200)
 
     def __str__(self):
         return self.name
@@ -28,13 +19,10 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=250,
-        verbose_name='Ingredient name',
-        db_index=True
-        )
+        max_length=250, verbose_name='Ingredient name', db_index=True
+    )
     measurement_unit = models.CharField(
-        max_length=100,
-        verbose_name='Measurement unit'
+        max_length=100, verbose_name='Measurement unit'
     )
 
     def __str__(self):
@@ -46,7 +34,7 @@ class Ingredient(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'measurement_unit'],
-                name='Unique name and measurement units combo'
+                name='Unique name and measurement units combo',
             ),
         ]
 
@@ -61,32 +49,29 @@ class Recipe(models.Model):
     )
     name = models.CharField(max_length=200, unique=True, verbose_name='name')
     image = models.ImageField(
-        'Picture',
-        upload_to='recipes/',
-        blank=False,
-        null=False
+        'Picture', upload_to='recipes/', blank=False, null=False
     )
     text = models.TextField('Cooking algorithm')
     pub_date = models.DateTimeField(
-        'Publication_date',
-        auto_now_add=True,
-        db_index=True
+        'Publication_date', auto_now_add=True, db_index=True
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name='Cooking Time',
-        validators=(MinValueValidator(limit_value=1), )
+        validators=(MinValueValidator(limit_value=1),),
     )
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
         blank=False,
-        verbose_name='Ingredients'
+        verbose_name='Ingredients',
     )
     tags = models.ManyToManyField(
-        Tag,
-        related_name='recipes',
-        blank=True,
-        verbose_name='Tags')
+        Tag, related_name='recipes', blank=True, verbose_name='Tags'
+    )
+
+    def image_display(self):
+        return mark_safe('<img src="%s" width="150" height="150" />' % (
+            self.image.url))
 
     def __str__(self):
         return self.name
@@ -112,19 +97,29 @@ class RecipeIngredient(models.Model):
             f'{self.ingredient.measurement_unit} for {self.recipe}'
         )
 
+    class Meta:
+        verbose_name = 'Recipe Ingredient'
+        verbose_name_plural = 'Recipe Ingridients'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='Unique ingredient for a recipe'
+            ),
+        ]
+
 
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Bookmarking user',
-        related_name='favorite'
+        related_name='favorite',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         related_name='favorite',
-        verbose_name='Favorited recipe'
+        verbose_name='Favorited recipe',
     )
 
     def __str__(self):
@@ -145,13 +140,13 @@ class ShoppingCart(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='shop_cart',
-        verbose_name='Shopping cart user'
+        verbose_name='Shopping cart user',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         related_name='shop_cart',
-        verbose_name='Recipe in shopping cart'
+        verbose_name='Recipe in shopping cart',
     )
 
     def __str__(self):
@@ -163,6 +158,6 @@ class ShoppingCart(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['recipe', 'user'],
-                name='Unique user and recipe in cart'
+                name='Unique user and recipe in cart',
             ),
         ]
