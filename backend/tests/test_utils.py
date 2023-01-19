@@ -22,8 +22,12 @@ class TestShoppingList(TestCase):
         cls.ingredient3 = Ingredient.objects.create(
             name='Salt', measurement_unit='to taste'
         )
-        cls.user = User.objects.create_user(username='cook')
-        cls.user2 = User.objects.create_user(username='amateur')
+        cls.user = User.objects.create_user(
+            username='cook', email='e1@mail.com'
+        )
+        cls.user2 = User.objects.create_user(
+            username='amateur', email='e2@mail.com'
+        )
         presets = {
             'cooking_time': 15,
             'author': cls.user,

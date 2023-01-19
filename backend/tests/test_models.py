@@ -4,7 +4,12 @@ from django.db import IntegrityError
 from django.test import TestCase
 
 from recipes.models import (
-    Recipe, Ingredient, Tag, RecipeIngredient, Favorite, ShoppingCart
+    Recipe,
+    Ingredient,
+    Tag,
+    RecipeIngredient,
+    Favorite,
+    ShoppingCart,
 )
 from users.models import Subscription
 
@@ -65,14 +70,18 @@ class TestPresets(TestCase):
     def setUpTestData(cls):
         cls.ingredient = Ingredient.objects.create(name='Pumpkin')
         cls.tag = Tag.objects.create(name='breakfast')
-        cls.user = User.objects.create_user(username='user1')
-        cls.user2 = User.objects.create_user(username='user2')
+        cls.user = User.objects.create_user(
+            username='user1', email='user1@gmail.com'
+        )
+        cls.user2 = User.objects.create_user(
+            username='user2', email='user2@gmail.com'
+        )
         cls.recipe = Recipe.objects.create(
             author=cls.user,
             name='Potato gnocchi',
             text='You and me and the devil make three',
             cooking_time=15,
-            image='test.jpg'
+            image='test.jpg',
         )
         cls.recipeingredient = RecipeIngredient.objects.create(
             recipe=cls.recipe, ingredient=cls.ingredient, amount=1
@@ -82,7 +91,6 @@ class TestPresets(TestCase):
 
 
 class HumanReadableTest(TestPresets):
-
     def test_models_have_correct_object_names(self):
         """Models return expected str."""
 
@@ -98,7 +106,7 @@ class HumanReadableTest(TestPresets):
                 f'{self.recipeingredient.amount} '
                 f'{self.recipeingredient.ingredient.measurement_unit} '
                 f'for {self.recipe}'
-            ): str(self.recipeingredient)
+            ): str(self.recipeingredient),
         }
         for expectation, string in expected_str.items():
             with self.subTest(expectation=expectation):
@@ -114,13 +122,13 @@ class HumanReadableTest(TestPresets):
             'text': 'Cooking algorithm',
             'ingredients': 'Ingredients',
             'cooking_time': 'Cooking Time',
-            'tags': 'Tags'
+            'tags': 'Tags',
         }
         for field, expected_value in field_verboses.items():
             with self.subTest(field=field):
                 self.assertEqual(
                     self.recipe._meta.get_field(field).verbose_name,
-                    expected_value
+                    expected_value,
                 )
 
 
