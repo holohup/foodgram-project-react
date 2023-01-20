@@ -67,7 +67,6 @@ class CustomTokenSerializer(serializers.Serializer):
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -77,8 +76,15 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
-            'is_subscribed',
         )
+
+
+class CustomUserListSerializer(CustomUserSerializer):
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = CustomUserSerializer.Meta.fields + ('is_subscribed', )
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user

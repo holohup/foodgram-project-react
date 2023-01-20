@@ -59,10 +59,34 @@ class UnauthorizedUserTests(APITestCase):
                 self.assertIn(field, user_data)
         self.assertFalse(user_data['is_subscribed'])
 
+    def test_create_user(self):
+        """Create a user, check response codes and fields."""
+
+        payload = {
+            'email': 'hodleo2@ngfs.com',
+            'username': 'Willie',
+            'first_name': '',
+            'last_name': 'Wonka',
+            'password': 'Qwerffty123Qwerty123'
+        }
+        response = self.client.post(reverse('customuser-list'), payload)
+        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        payload['first_name'] = 'Willy'
+        response = self.client.post(reverse('customuser-list'), payload)
+        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertNotIn('is_subscribed', data)
+        payload['id'] = User.objects.last().id
+        for field in data.keys():
+            with self.subTest(field=field):
+                self.assertEqual(payload[field], data[field])
+
+
 
 class AuthorizedUserTests(APITestCase):
     """Tests for authorized clients of non-admin level."""
 
+    @classmethod
     def setUp(self):
         self.user = User.objects.create_user(username='u', email='u@i.com')
         self.author = User.objects.create_user(username='a', email='a@i.com')
