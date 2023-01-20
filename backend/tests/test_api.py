@@ -26,6 +26,7 @@ class UnauthorizedUserTests(APITestCase):
         response = self.client.post(reverse('get_token'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('auth_token', response.data)
+        self.assertEqual(len(response.data), 1)
         token = response.data['auth_token']
         self.assertIsNotNone(token)
         logout_url = reverse('logout')
@@ -46,14 +47,12 @@ class UnauthorizedUserTests(APITestCase):
         for field in 'count', 'next', 'previous', 'results':
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
+        self.assertEqual(len(response.data), 4)
         user_data = response.data['results'][0]
+        self.assertEqual(len(user_data), 6)
         for field in (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
+            'email', 'id', 'username', 'first_name', 'last_name',
+            'is_subscribed'
         ):
             with self.subTest(field=field):
                 self.assertIn(field, user_data)
@@ -70,17 +69,36 @@ class UnauthorizedUserTests(APITestCase):
             'password': 'Qwerffty123Qwerty123'
         }
         response = self.client.post(reverse('customuser-list'), payload)
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         payload['first_name'] = 'Willy'
         response = self.client.post(reverse('customuser-list'), payload)
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.data
+        self.assertEqual(len(response.data), 5)
         self.assertNotIn('is_subscribed', data)
         payload['id'] = User.objects.last().id
         for field in data.keys():
             with self.subTest(field=field):
                 self.assertEqual(payload[field], data[field])
 
+    def test_user_profile(self):
+        """Existing user is visible to others."""
+
+        user = User.objects.create(email='hello@kitty.com')
+        url = reverse('customuser-detail', kwargs={'id': 100500})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        url = reverse('customuser-detail', kwargs={'id': user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'hello@kitty.com')
+        self.assertEqual(len(response.data), 6)
+        for field in (
+            'email', 'username', 'id', 'first_name', 'last_name',
+            'is_subscribed'
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
 
 
 class AuthorizedUserTests(APITestCase):
