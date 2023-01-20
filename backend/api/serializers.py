@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from recipes.models import Recipe
+from users.models import Subscription
 
 User = get_user_model()
 
@@ -63,3 +64,25 @@ class CustomTokenSerializer(serializers.Serializer):
 
     def save(self):
         return Token.objects.get_or_create(user=self.validated_data)
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        )
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        return (
+            user.is_authenticated
+            and Subscription.objects.filter(author=obj, user=user).exists()
+        )
