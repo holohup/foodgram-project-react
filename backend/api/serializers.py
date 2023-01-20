@@ -2,10 +2,12 @@ import base64
 import datetime
 
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.serializers import ValidationError
 
 from recipes.models import Recipe
 from users.models import Subscription
@@ -45,10 +47,36 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
 
+class SetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(
+        max_length=150, write_only=True, required=True
+    )
+    old_password = serializers.CharField(
+        max_length=150, write_only=True, required=True
+    )
+
+    def validate_old_password(self, value):
+        if self.context['request'].user.check_password(value):
+            return value
+        raise ValidationError('Invalid old password.')
+
+    def validate_new_password(self, value):
+        if not validate_password(value):
+            return value
+        raise ValidationError('Could not validate password')
+
+    def validate(self, data):
+        if data['new_password'] == data['old_password']:
+            raise ValidationError('Cannot change password to the same value.')
+        return data
+
+
 class CustomTokenSerializer(serializers.Serializer):
 
     email = serializers.EmailField(write_only=True, required=True)
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(
+        max_length=150, write_only=True, required=True
+    )
     auth_token = serializers.CharField(required=False)
 
     def validate(self, data):
@@ -58,7 +86,7 @@ class CustomTokenSerializer(serializers.Serializer):
         )
         if user is not None:
             return user
-        raise serializers.ValidationError(
+        raise ValidationError(
             f'Wrong password: {data["password"]}.'
         )
 
@@ -78,16 +106,24 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'last_name',
         )
 
+    def validate_username(self, value):
+        if value in ('me', 'set_password') or value.isnumeric():
+            raise ValidationError('This username is prohibited.')
+        return value
 
-class CustomUserListSerializer(CustomUserSerializer):
-    is_subscribed = serializers.SerializerMethodField(read_only=True)
+
+class CustomUserSubscriptionsSerializer(CustomUserSerializer):
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = CustomUserSerializer.Meta.fields + ('is_subscribed', )
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
+        request = self.context.get('request')
+        if not request:
+            return False
+        user = request.user
         return (
             user.is_authenticated
             and Subscription.objects.filter(author=obj, user=user).exists()

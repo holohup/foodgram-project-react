@@ -1,4 +1,3 @@
-from datetime import timedelta
 from distutils.util import strtobool
 import os
 
@@ -114,21 +113,21 @@ REST_FRAMEWORK = {
         'PAGE_SIZE': 5,
 }
 
-DJOSER = {
-    'HIDE_USERS': False,
-    'PERMISSIONS': {
+# DJOSER = {
+#     'HIDE_USERS': False,
+#     'PERMISSIONS': {
 
-    # 'user': ['rest_framework.permissions.IsAuthenticated'],
-    'user_list': ['rest_framework.permissions.AllowAny'],
-    'user': ['rest_framework.permissions.AllowAny'],
-    },
-    'SERIALIZERS': {
-    #     'user_create': 'core.serializers.UserCreateSerializer',
-    #     'current_user': 'core.serializers.UserSerializer',
-        'user': 'api.serializers.CustomUserListSerializer',
-        'user_create': 'api.serializers.CustomUserSerializer',
-
-    }
-}
+#     # 'user': ['rest_framework.permissions.IsAuthenticated'],
+#     # 'user_list': ['rest_framework.permissions.AllowAny'],
+#     # 'user': ['rest_framework.permissions.AllowAny'],
+#     # 'current_user': ['rest_framework.permissions.isAuthenticated']
+#     },
+#     'SERIALIZERS': {
+#         # 'user': 'api.serializers.CustomUserListSerializer',
+#         # 'user_create': 'api.serializers.CustomUserSerializer',
+#         # 'current_user': 'api.serializers.CustomUserListSerializer'
+#     }
+# }
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
+# CORS_ALLOWED_ORIGINS = [*]
