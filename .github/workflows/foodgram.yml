@@ -21,13 +21,10 @@ jobs:
       - name: Installing dependencies and testing scripts
         run: |
           python -m pip install --upgrade pip
-          pip install -r api_yamdb/requirements.txt
+          pip install -r backend/requirements.txt
 
       - name: Flake8 tests
         run: python -m flake8
-
-      - name: Pytest
-        run: pytest
 
       - name: Unit tests
         run: python manage.py test
@@ -71,7 +68,7 @@ jobs:
     steps:
       - name: check statuscodes
         run: |
-          EXPECTED_401=$(curl --write-out '%{http_code}' -L --silent --output /dev/null http://${{ secrets.HOST }}/api/v1/)
+          EXPECTED_401=$(curl --write-out '%{http_code}' -L --silent --output /dev/null http://${{ secrets.HOST }}/api/)
           EXPECTED_200=$(curl --write-out '%{http_code}' -L --silent --output /dev/null http://${{ secrets.HOST }}/admin/)
           if [[ $EXPECTED_401 != "401" || $EXPECTED_200 != "200" ]]; then
             echo 'Something is not working'
