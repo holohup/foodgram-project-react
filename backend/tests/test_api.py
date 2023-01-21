@@ -1,5 +1,6 @@
 from django.urls import reverse
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model
+from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 
@@ -9,6 +10,7 @@ User = get_user_model()
 
 
 class UnauthorizedUserTests(APITestCase):
+    @classmethod
     def setUp(self):
         """Tests presets."""
 
@@ -17,7 +19,7 @@ class UnauthorizedUserTests(APITestCase):
             email='test@test.com',
             password='testpasswordtestpassword',
             first_name='Test',
-            last_name='User'
+            last_name='User',
         )
 
     def test_get_token_and_logout(self):
@@ -51,10 +53,6 @@ class UnauthorizedUserTests(APITestCase):
         User.objects.create(email='hello@space.com')
         response = self.client.get(reverse('users-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for field in 'count', 'next', 'previous', 'results':
-            with self.subTest(field=field):
-                self.assertIn(field, response.data)
-        self.assertEqual(len(response.data), 4)
         user_data = response.data['results'][0]
         self.assertEqual(len(user_data), 6)
         for field in (
@@ -105,8 +103,12 @@ class UnauthorizedUserTests(APITestCase):
         self.assertEqual(response.data['email'], 'hello@kitty.com')
         self.assertEqual(len(response.data), 6)
         for field in (
-            'email', 'username', 'id', 'first_name',
-            'last_name', 'is_subscribed',
+            'email',
+            'username',
+            'id',
+            'first_name',
+            'last_name',
+            'is_subscribed',
         ):
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
@@ -118,9 +120,7 @@ class UnauthorizedUserTests(APITestCase):
             reverse('users-detail', kwargs={'pk': self.testuser.id}),
             reverse('users-my-profile'),
         )
-        post_endpoints = (
-            reverse('users-set-password'),
-        )
+        post_endpoints = (reverse('users-set-password'),)
         invalid_token_client = APIClient()
         invalid_token_client.credentials(HTTP_AUTHORIZATION='Token ' + 'AAA')
         for endpoint in get_endpoints:
@@ -139,12 +139,8 @@ class UnauthorizedUserTests(APITestCase):
     def test_endpoints_without_tokens(self):
         """No token requests return correct status codes."""
 
-        get_endpoints = (
-            reverse('users-my-profile'),
-        )
-        post_endpoints = (
-            reverse('users-set-password'),
-        )
+        get_endpoints = (reverse('users-my-profile'),)
+        post_endpoints = (reverse('users-set-password'),)
         no_token_client = APIClient()
         for endpoint in get_endpoints:
             with self.subTest(endpoint=endpoint):
@@ -210,10 +206,7 @@ class AuthorizedUserTests(APITestCase):
         """Check if valid password change changes the password."""
 
         url = reverse('users-set-password')
-        creds = {
-            'old_password': 'even_this',
-            'new_password': '111'
-        }
+        creds = {'old_password': 'even_this', 'new_password': '111'}
         self.user.set_password(creds['old_password'])
         self.user.save()
         self.assertTrue(self.user.check_password(creds['old_password']))
@@ -227,3 +220,46 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.data, {})
         self.assertTrue(self.user.check_password(creds['new_password']))
+
+
+class PaginationTests(APITestCase):
+    @classmethod
+    def setUp(self):
+        self.fake = Faker()
+        self.users = [
+            User.objects.create(
+                username=self.fake.word(),
+                email=self.fake.email(),
+                first_name=self.fake.first_name(),
+                last_name=self.fake.last_name(),
+                password=self.fake.password(),
+            )
+            for _ in range(10)
+        ]
+
+    def test_users_pagination(self):
+        response = self.client.get(reverse('users-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for field in 'count', 'next', 'previous', 'results':
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        self.assertEqual(len(response.data), 4)
+        url = reverse('users-list')
+        response = self.client.get(url, {'limit': 3, 'page': 3})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 10)
+        self.assertEqual(
+            response.data['next'],
+            'http://testserver/api/users/?limit=3&page=4',
+        )
+        self.assertEqual(
+            response.data['previous'],
+            'http://testserver/api/users/?limit=3&page=2',
+        )
+        self.assertEqual(len(response.data['results']), 3)
+        response = self.client.get(url, {'limit': 5, 'page': 3})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.get(url, {'limit': 5, 'page': 1})
+        self.assertIsNone(response.data['previous'])
+        response = self.client.get(url, {'limit': 5, 'page': 2})
+        self.assertIsNone(response.data['next'])

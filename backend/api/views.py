@@ -27,7 +27,7 @@ def get_token(request):
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = CustomUserSubscriptionsSerializer
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('username')
     permission_classes = [AllowAny]
 
     @action(
@@ -37,7 +37,10 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def my_profile(self, request):
-        serializer = CustomUserSubscriptionsSerializer(request.user)
+        serializer = CustomUserSubscriptionsSerializer(
+            request.user,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(

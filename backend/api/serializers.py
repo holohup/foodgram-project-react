@@ -107,8 +107,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
         )
 
     def validate_username(self, value):
-        if value in ('me', 'set_password') or value.isnumeric():
+        if value in ('me', 'set_password', 'subscriptions'):
             raise ValidationError('This username is prohibited.')
+        if value.isnumeric():
+            raise ValidationError('Username must contain letters.')
         return value
 
 
@@ -121,8 +123,6 @@ class CustomUserSubscriptionsSerializer(CustomUserSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if not request:
-            return False
         user = request.user
         return (
             user.is_authenticated
