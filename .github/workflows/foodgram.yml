@@ -27,7 +27,7 @@ jobs:
         run: python -m flake8
 
       - name: Unit tests
-        run: python manage.py test
+        run: cd backend && python manage.py test
 
   build_image_and_push_to_docker_hub:
     name: Build and Push Docker image to Docker Hub
