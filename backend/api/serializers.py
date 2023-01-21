@@ -9,7 +9,6 @@ from rest_framework import serializers
 # from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
-
 from recipes.models import Recipe
 from users.models import Subscription
 

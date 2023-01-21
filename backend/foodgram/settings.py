@@ -1,5 +1,5 @@
-from distutils.util import strtobool
 import os
+from distutils.util import strtobool
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
