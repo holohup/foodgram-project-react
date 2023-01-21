@@ -33,7 +33,7 @@ services:
   db:
     image: postgres:13.0-alpine
     volumes:
-      - ~/foodgram:/var/lib/postgresql/data/:rwx
+      - ~/foodgram:/var/lib/postgresql/data/
     env_file:
       - ./.env
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
       context: ../backend
     restart: unless-stopped
     volumes:
-      - static_value:/app/static/:rwx
+      - static_value:/app/static/
       - media_value:/app/media/
     depends_on:
       db:
