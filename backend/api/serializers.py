@@ -1,13 +1,13 @@
 import base64
 import datetime
 
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
-# from djoser.serializers import TokenCreateSerializer
-from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+# from djoser.serializers import TokenCreateSerializer
+from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 
 from recipes.models import Recipe

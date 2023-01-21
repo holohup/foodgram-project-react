@@ -2,14 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.utils.html import format_html
 
-from .models import (
-    Recipe,
-    Tag,
-    Ingredient,
-    RecipeIngredient,
-    Favorite,
-    ShoppingCart,
-)
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 
 admin.site.unregister(Group)
 

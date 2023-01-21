@@ -1,16 +1,14 @@
 # from django.shortcuts import get_object_or_404, render
 # from rest_framework import filters
-from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import api_view, action, permission_classes
 from django.contrib.auth import get_user_model
+from rest_framework import status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .serializers import (
-    CustomTokenSerializer,
-    CustomUserSubscriptionsSerializer,
-    CustomUserSerializer,
-    SetPasswordSerializer,
-)
+
+from .serializers import (CustomTokenSerializer, CustomUserSerializer,
+                          CustomUserSubscriptionsSerializer,
+                          SetPasswordSerializer)
 
 User = get_user_model()
 
