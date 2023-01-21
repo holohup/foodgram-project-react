@@ -1,7 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from .views import get_token, CustomUserViewSet
-
+# from djoser.serializers import SetPasswordSerializer
+# from djoser.urls import authtoken
+# from djoser.serializers import TokenCreateSerializer
 router = DefaultRouter()
 
 router.register('users', CustomUserViewSet, basename='users')

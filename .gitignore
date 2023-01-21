@@ -135,5 +135,5 @@ dmypy.json
 test.sh
 creds.txt
 docker-compose_dev.yml
-
+nr.sh
 backend/media/recipes/*.jpg

@@ -1,7 +1,6 @@
 from distutils.util import strtobool
 import os
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv(
@@ -25,7 +24,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
-
 ]
 
 MIDDLEWARE = [
@@ -104,16 +102,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication'
     ],
-    'DEFAULT_PAGINATION_CLASS':
-        'api.pagination.PageLimitPagination',
-        'PAGE_SIZE': 5,
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.PageLimitPagination',
+    'PAGE_SIZE': 5,
 }
 
 # DJOSER = {
+# 'LOGIN_FIELD': 'email',
 #     'HIDE_USERS': False,
 #     'PERMISSIONS': {
 
@@ -122,12 +119,14 @@ REST_FRAMEWORK = {
 #     # 'user': ['rest_framework.permissions.AllowAny'],
 #     # 'current_user': ['rest_framework.permissions.isAuthenticated']
 #     },
-#     'SERIALIZERS': {
+# 'SERIALIZERS': {
 #         # 'user': 'api.serializers.CustomUserListSerializer',
 #         # 'user_create': 'api.serializers.CustomUserSerializer',
 #         # 'current_user': 'api.serializers.CustomUserListSerializer'
-#     }
+# 'token_create': 'api.serializers.CustomTokenCreateSerializer'
 # }
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
+# }
+
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1', '*']
 # CORS_ALLOWED_ORIGINS = [*]

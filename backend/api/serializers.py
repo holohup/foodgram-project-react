@@ -4,6 +4,7 @@ import datetime
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
+# from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -46,6 +47,30 @@ class RecipeSerializer(serializers.ModelSerializer):
             'group',
         )
 
+
+# class CustomTokenCreateSerializer(TokenCreateSerializer):
+
+#     password = serializers.CharField(
+#         max_length=150, write_only=True, required=True
+#     )
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.user = None
+#         self.fields['email'] = serializers.EmailField(
+#           write_only=True, required=True
+#           )
+
+#     def validate(self, data):
+#         user = authenticate(
+#             username=get_object_or_404(User, email=data['email']).username,
+#             password=data['password'],
+#         )
+#         if user is not None:
+#             return data
+#         raise ValidationError(
+#             f'Wrong password: {data["password"]}.'
+#         )
 
 class SetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(
