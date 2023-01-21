@@ -41,10 +41,10 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Flake8 tests
-        run: cd backend && python -m flake8
+        run: python -m flake8
 
       - name: Unit tests
-        run: python manage.py test
+        run: cd backend && python manage.py test
         env:
           DB_HOST: postgres
           DB_POST: 5432
