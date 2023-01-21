@@ -5,11 +5,12 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from recipes.models import Recipe
 from rest_framework import serializers
 # from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
+
+from recipes.models import Recipe
 from users.models import Subscription
 
 User = get_user_model()
