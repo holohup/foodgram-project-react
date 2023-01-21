@@ -9,7 +9,7 @@ jobs:
   code_tests:
     runs-on: ubuntu-latest
     services:
-      postgres:
+      db:
         image: postgres
 
         env:
@@ -45,9 +45,6 @@ jobs:
 
       - name: Unit tests
         run: cd backend && python manage.py test
-        env:
-          DB_HOST: postgres
-          DB_POST: 5432
 
   build_image_and_push_to_docker_hub:
     name: Build and Push Docker image to Docker Hub
