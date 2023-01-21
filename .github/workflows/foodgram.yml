@@ -47,7 +47,7 @@ jobs:
       - name: Unit tests
         run: cd backend && python manage.py test
         env:
-          DB_NAME: postgres
+          DB_HOST: localhost
 
   build_image_and_push_to_docker_hub:
     name: Build and Push Docker image to Docker Hub
