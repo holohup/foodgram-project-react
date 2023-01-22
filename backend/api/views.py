@@ -6,10 +6,11 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Tag
+from recipes.models import Tag, Ingredient
 from .serializers import (CustomTokenSerializer, CustomUserSerializer,
                           CustomUserSubscriptionsSerializer,
-                          SetPasswordSerializer, TagSerializer)
+                          SetPasswordSerializer, TagSerializer,
+                          IngredientSerializer)
 
 User = get_user_model()
 
@@ -26,9 +27,14 @@ def get_token(request):
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TagSerializer
-    queryset = Tag.objects.all()
+    queryset = Tag.objects.all().order_by('name')
     permission_classes = [AllowAny]
     pagination_class = None
+
+
+class IngredientViewSet(TagViewSet):
+    serializer_class = IngredientSerializer
+    queryset = Ingredient.objects.all().order_by('name')
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):

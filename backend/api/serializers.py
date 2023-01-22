@@ -10,7 +10,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 
-from recipes.models import Recipe, Tag
+from recipes.models import Recipe, Tag, Ingredient
 from users.models import Subscription
 
 User = get_user_model()
@@ -159,3 +159,9 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Tag
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = Ingredient

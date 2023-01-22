@@ -4,7 +4,7 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Tag
+from recipes.models import Tag, Ingredient
 from users.models import Subscription
 
 User = get_user_model()
@@ -96,14 +96,15 @@ class UnauthorizedUserTests(APITestCase):
         """Test tags endpoint."""
 
         names = self.fake.words(10)
-        tags = [Tag.objects.create(
-            name=name,
-            color=self.fake.color().upper(),
-            slug=name) for name in names
+        tags = [
+            Tag.objects.create(
+                name=name, color=self.fake.color().upper(), slug=name
+            )
+            for name in names
         ]
 
-        response = self.client.get(reverse(
-            'tags-detail', kwargs={'pk': tags[0].id})
+        response = self.client.get(
+            reverse('tags-detail', kwargs={'pk': tags[0].id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
@@ -114,7 +115,38 @@ class UnauthorizedUserTests(APITestCase):
         response = self.client.get(reverse('tags-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), len(names))
+        response = self.client.get(reverse('tags-detail', kwargs={'pk': 100}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_ingredients(self):
+        """Test ingredients endpoint."""
+
+        names = self.fake.words(10)
+        ingredients = [
+            Ingredient.objects.create(
+                name=name, measurement_unit=self.fake.word()
+            )
+            for name in names
+        ]
+
+        response = self.client.get(
+            reverse('ingredients-detail', kwargs={'pk': ingredients[0].id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        for field in 'measurement_unit', 'id', 'name':
+            with self.subTest(field=field):
+                self.assertEqual(
+                    response.data[field], getattr(ingredients[0], field)
+                )
+
+        response = self.client.get(reverse('ingredients-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), len(names))
+        response = self.client.get(
+            reverse('ingredients-detail', kwargs={'pk': 100})
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_user_profile(self):
         """Existing user is visible to others."""
