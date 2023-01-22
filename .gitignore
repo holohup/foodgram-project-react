@@ -137,3 +137,4 @@ creds.txt
 docker-compose_dev.yml
 nr.sh
 backend/media/recipes/*.jpg
+dev.sh

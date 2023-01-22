@@ -10,7 +10,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 
-from recipes.models import Recipe
+from recipes.models import Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -153,3 +153,9 @@ class CustomUserSubscriptionsSerializer(CustomUserSerializer):
             user.is_authenticated
             and Subscription.objects.filter(author=obj, user=user).exists()
         )
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = Tag

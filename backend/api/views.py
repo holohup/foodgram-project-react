@@ -6,9 +6,10 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from recipes.models import Tag
 from .serializers import (CustomTokenSerializer, CustomUserSerializer,
                           CustomUserSubscriptionsSerializer,
-                          SetPasswordSerializer)
+                          SetPasswordSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -21,6 +22,13 @@ def get_token(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = TagSerializer
+    queryset = Tag.objects.all()
+    permission_classes = [AllowAny]
+    pagination_class = None
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):

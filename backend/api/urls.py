@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import CustomUserViewSet, get_token
+from .views import CustomUserViewSet, get_token, TagViewSet
 
 # from djoser.serializers import SetPasswordSerializer
 # from djoser.urls import authtoken
@@ -9,6 +9,7 @@ from .views import CustomUserViewSet, get_token
 router = DefaultRouter()
 
 router.register('users', CustomUserViewSet, basename='users')
+router.register('tags', TagViewSet, basename='tags')
 
 djoser_urlpatterns = [
     path('auth/', include('djoser.urls.authtoken')),

@@ -4,6 +4,7 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
+from recipes.models import Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -11,16 +12,17 @@ User = get_user_model()
 
 class UnauthorizedUserTests(APITestCase):
     @classmethod
-    def setUp(self):
+    def setUp(cls):
         """Tests presets."""
 
-        self.testuser = User.objects.create(
+        cls.testuser = User.objects.create(
             username='testuser',
             email='test@test.com',
             password='testpasswordtestpassword',
             first_name='Test',
             last_name='User',
         )
+        cls.fake = Faker()
 
     def test_get_token_and_logout(self):
         """Check if we can obtain a working token, and we can delete it."""
@@ -89,6 +91,30 @@ class UnauthorizedUserTests(APITestCase):
         for field in data.keys():
             with self.subTest(field=field):
                 self.assertEqual(payload[field], data[field])
+
+    def test_tags(self):
+        """Test tags endpoint."""
+
+        names = self.fake.words(10)
+        tags = [Tag.objects.create(
+            name=name,
+            color=self.fake.color().upper(),
+            slug=name) for name in names
+        ]
+
+        response = self.client.get(reverse(
+            'tags-detail', kwargs={'pk': tags[0].id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
+        for field in 'color', 'id', 'name', 'slug':
+            with self.subTest(field=field):
+                self.assertEqual(response.data[field], getattr(tags[0], field))
+
+        response = self.client.get(reverse('tags-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), len(names))
+
 
     def test_user_profile(self):
         """Existing user is visible to others."""
@@ -160,18 +186,18 @@ class AuthorizedUserTests(APITestCase):
     """Tests for authorized clients of non-admin level."""
 
     @classmethod
-    def setUp(self):
-        self.user_details = {
+    def setUp(cls):
+        cls.user_details = {
             'username': 'u',
             'email': 'u@i.com',
             'first_name': 'William',
             'last_name': 'Tell',
         }
-        self.user = User.objects.create_user(**self.user_details)
-        self.author = User.objects.create_user(username='a', email='a@i.com')
-        self.user_client, self.author_client = APIClient(), APIClient()
-        self.user_client.force_authenticate(self.user)
-        self.author_client.force_authenticate(self.author)
+        cls.user = User.objects.create_user(**cls.user_details)
+        cls.author = User.objects.create_user(username='a', email='a@i.com')
+        cls.user_client, cls.author_client = APIClient(), APIClient()
+        cls.user_client.force_authenticate(cls.user)
+        cls.author_client.force_authenticate(cls.author)
 
     def test_subscriptions_on_users_page(self):
         """Create a subscription, check that it shows on /users/ endpoint."""
@@ -224,17 +250,18 @@ class AuthorizedUserTests(APITestCase):
 
 class PaginationTests(APITestCase):
     @classmethod
-    def setUp(self):
-        self.fake = Faker()
-        self.users = [
+    def setUp(cls):
+        cls.fake = Faker()
+        usernames = cls.fake.words(10)
+        cls.users = [
             User.objects.create(
-                username=self.fake.word(),
-                email=self.fake.email(),
-                first_name=self.fake.first_name(),
-                last_name=self.fake.last_name(),
-                password=self.fake.password(),
+                username=username,
+                email=cls.fake.email(),
+                first_name=cls.fake.first_name(),
+                last_name=cls.fake.last_name(),
+                password=cls.fake.password(),
             )
-            for _ in range(10)
+            for username in usernames
         ]
 
     def test_users_pagination(self):
