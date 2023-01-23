@@ -10,7 +10,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -72,6 +72,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 #             f'Wrong password: {data["password"]}.'
 #         )
 
+
 class SetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(
         max_length=150, write_only=True, required=True
@@ -111,16 +112,46 @@ class CustomTokenSerializer(serializers.Serializer):
         )
         if user is not None:
             return user
-        raise ValidationError(
-            f'Wrong password: {data["password"]}.'
-        )
+        raise ValidationError(f'Wrong password: {data["password"]}.')
 
     def save(self):
         return Token.objects.get_or_create(user=self.validated_data)
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
+class FavoriteSerializer(serializers.ModelSerializer):
 
+    name = serializers.CharField(source='recipe.name', read_only=True)
+    cooking_time = serializers.IntegerField(
+        source='recipe.cooking_time', read_only=True
+    )
+    image = serializers.SerializerMethodField()
+    user_id = serializers.CharField(write_only=True)
+    recipe_id = serializers.CharField(write_only=True)
+
+    def get_image(self, favorite):
+        request = self.context['request']
+        return request.build_absolute_uri(favorite.recipe.image.url)
+
+    class Meta:
+        model = Favorite
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+            'user_id',
+            'recipe_id',
+        )
+
+    def validate(self, data):
+        recipe = Recipe.objects.get(id=data['recipe_id'])
+        user = User.objects.get(id=data['user_id'])
+        if not Favorite.objects.filter(user=user, recipe=recipe):
+            return data
+        raise ValidationError('This favorite already exists.')
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -131,20 +162,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'last_name',
         )
 
-    def validate_username(self, value):
-        if value in ('me', 'set_password', 'subscriptions'):
-            raise ValidationError('This username is prohibited.')
-        if value.isnumeric():
-            raise ValidationError('Username must contain letters.')
-        return value
-
 
 class CustomUserSubscriptionsSerializer(CustomUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = CustomUserSerializer.Meta.fields + ('is_subscribed', )
+        fields = CustomUserSerializer.Meta.fields + ('is_subscribed',)
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')

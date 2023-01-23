@@ -1,10 +1,11 @@
+# from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Tag, Ingredient
+from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -23,6 +24,12 @@ class UnauthorizedUserTests(APITestCase):
             last_name='User',
         )
         cls.fake = Faker()
+        cls.recipe = Recipe.objects.create(
+            author=cls.testuser,
+            text=cls.fake.text(),
+            name=cls.fake.sentence(),
+            cooking_time=cls.fake.pyint(),
+        )
 
     def test_get_token_and_logout(self):
         """Check if we can obtain a working token, and we can delete it."""
@@ -95,7 +102,7 @@ class UnauthorizedUserTests(APITestCase):
     def test_tags(self):
         """Test tags endpoint."""
 
-        names = self.fake.words(10)
+        names = self.fake.words(10, unique=True)
         tags = [
             Tag.objects.create(
                 name=name, color=self.fake.color().upper(), slug=name
@@ -121,7 +128,7 @@ class UnauthorizedUserTests(APITestCase):
     def test_ingredients(self):
         """Test ingredients endpoint."""
 
-        names = self.fake.words(10)
+        names = self.fake.words(10, unique=True)
         ingredients = [
             Ingredient.objects.create(
                 name=name, measurement_unit=self.fake.word()
@@ -176,7 +183,7 @@ class UnauthorizedUserTests(APITestCase):
 
         get_endpoints = (
             reverse('users-detail', kwargs={'pk': self.testuser.id}),
-            reverse('users-my-profile'),
+            reverse('users-me'),
         )
         post_endpoints = (reverse('users-set-password'),)
         invalid_token_client = APIClient()
@@ -197,8 +204,11 @@ class UnauthorizedUserTests(APITestCase):
     def test_endpoints_without_tokens(self):
         """No token requests return correct status codes."""
 
-        get_endpoints = (reverse('users-my-profile'),)
-        post_endpoints = (reverse('users-set-password'),)
+        get_endpoints = (reverse('users-me'),)
+        post_endpoints = (
+            reverse('users-set-password'),
+            reverse('favorite', kwargs={'recipe_id': 1}),
+        )
         no_token_client = APIClient()
         for endpoint in get_endpoints:
             with self.subTest(endpoint=endpoint):
@@ -230,6 +240,14 @@ class AuthorizedUserTests(APITestCase):
         cls.user_client, cls.author_client = APIClient(), APIClient()
         cls.user_client.force_authenticate(cls.user)
         cls.author_client.force_authenticate(cls.author)
+        cls.fake = Faker()
+        cls.recipe = Recipe.objects.create(
+            author=cls.author,
+            text=cls.fake.text(),
+            name=cls.fake.sentence(),
+            cooking_time=cls.fake.pyint(),
+            image=cls.fake.file_path(depth=3, category='image')
+        )
 
     def test_subscriptions_on_users_page(self):
         """Create a subscription, check that it shows on /users/ endpoint."""
@@ -248,7 +266,7 @@ class AuthorizedUserTests(APITestCase):
     def test_my_profile(self):
         """Test if the user profile is correct."""
 
-        response = self.user_client.get(reverse('users-my-profile'))
+        response = self.user_client.get(reverse('users-me'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for field in self.user_details.keys():
             with self.subTest(field=field):
@@ -279,16 +297,37 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(response.data, {})
         self.assertTrue(self.user.check_password(creds['new_password']))
 
+    def test_favorite_endpoint(self):
+        """Tests for favorite endpoint."""
+
+        previous_favs = Favorite.objects.count()
+        url = reverse('favorite', kwargs={'recipe_id': self.recipe.id})
+        response = self.user_client.post(url, {})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Favorite.objects.count(), previous_favs + 1)
+        self.assertEqual(len(response.data), 4)
+        for field in 'id', 'name', 'image', 'cooking_time':
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        self.assertIsInstance(response.data['id'], int)
+        self.assertIsInstance(response.data['cooking_time'], int)
+        self.assertIsInstance(response.data['image'], str)
+        self.assertIsInstance(response.data['name'], str)
+        self.assertIn('://', response.data['image'])
+        response = self.user_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Favorite.objects.count(), previous_favs)
+
 
 class PaginationTests(APITestCase):
     @classmethod
     def setUp(cls):
         cls.fake = Faker()
-        usernames = cls.fake.words(10)
+        usernames = cls.fake.words(10, unique=True)
         cls.users = [
             User.objects.create(
                 username=username,
-                email=cls.fake.email(),
+                email=username + '.' + cls.fake.email(),
                 first_name=cls.fake.first_name(),
                 last_name=cls.fake.last_name(),
                 password=cls.fake.password(),
