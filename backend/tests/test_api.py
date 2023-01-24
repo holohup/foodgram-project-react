@@ -29,6 +29,7 @@ class UnauthorizedUserTests(APITestCase):
             text=cls.fake.text(),
             name=cls.fake.sentence(),
             cooking_time=cls.fake.pyint(),
+            image='/images/test.jpg'
         )
 
     def test_get_token_and_logout(self):
@@ -177,6 +178,31 @@ class UnauthorizedUserTests(APITestCase):
         ):
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
+
+    def test_recipes_list(self):
+        """Recipes list has all the necessary fields in correct formats."""
+
+        response = self.client.get(reverse('recipes-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data['results'][0]
+        self.assertEqual(len(data), 10)
+        for field in (
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, data)
+        self.assertIsInstance(data['tags'], list)
+        self.assertIsInstance(data['ingredients'], list)
+        self.assertIsInstance(data['id'], int)
+        self.assertIsInstance(data['cooking_time'], int)
+        self.assertIsInstance(data['author'], dict)
+        self.assertIsInstance(data['is_favorited'], bool)
+        self.assertIsInstance(data['is_in_shopping_cart'], bool)
+        self.assertIsInstance(data['image'], str)
+        self.assertIsInstance(data['name'], str)
+        self.assertIsInstance(data['text'], str)
+
 
     def test_endpoints_with_invalid_tokens(self):
         """Invalid token requests return correct status codes."""
@@ -359,6 +385,8 @@ class AuthorizedUserTests(APITestCase):
         self.assertNotIn(self.author.id, author_ids)
         response = self.user_client.post(subscribe_url, {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.user_client.post(subscribe_url, {})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Subscription.objects.count(), prev_subs + 1)
         last_subscription = Subscription.objects.last()
         self.assertEqual(last_subscription.user, self.user)
@@ -429,12 +457,12 @@ class PaginationTests(APITestCase):
     @classmethod
     def setUp(cls):
         cls.paginated_pages = {
-            11: reverse('users-list'),
-            10: reverse('users-subscriptions'),
-            # reverse('recipes')
+            reverse('users-list'): 11,
+            reverse('users-subscriptions'): 10,
+            reverse('recipes-list'): 10
         }
         cls.fake = Faker()
-        usernames = cls.fake.words(10, unique=True)
+        usernames = cls.fake.words(11, unique=True)
         cls.users = [
             User.objects.create(
                 username=username,
@@ -443,20 +471,30 @@ class PaginationTests(APITestCase):
                 last_name=cls.fake.last_name(),
                 password=cls.fake.password(),
             )
-            for username in usernames
+            for username in usernames[:10]
         ]
-        cls.subscriber = User.objects.create(username=cls.fake.word())
+        cls.subscriber = User.objects.create(username=usernames[-1])
         cls.subscriptions = [
             Subscription.objects.create(user=cls.subscriber, author=user)
             for user in cls.users
         ]
         cls.subscriber_client = APIClient()
         cls.subscriber_client.force_authenticate(cls.subscriber)
+        cls.recipes = [
+            Recipe.objects.create(
+                author=cls.subscriber,
+                text=cls.fake.text(),
+                name=cls.fake.sentence(),
+                cooking_time=cls.fake.pyint(),
+                image=cls.fake.file_path(depth=3, category='image'),
+            )
+            for _ in range(10)
+        ]
 
     def test_paginated_pages(self):
         """Tests that pages that should be paginated are paginated."""
 
-        for amount, url in self.paginated_pages.items():
+        for url, amount in self.paginated_pages.items():
             response = self.subscriber_client.get(url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             for field in 'count', 'next', 'previous', 'results':

@@ -70,8 +70,9 @@ class Recipe(models.Model):
     )
 
     def image_display(self):
-        return mark_safe('<img src="%s" width="150" height="150" />' % (
-            self.image.url))
+        return mark_safe(
+            '<img src="%s" width="150" height="150" />' % (self.image.url)
+        )
 
     def __str__(self):
         return self.name
@@ -87,8 +88,12 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(
+        Recipe, related_name='recipeingredient', on_delete=models.CASCADE
+    )
+    ingredient = models.ForeignKey(
+        Ingredient, related_name='recipeingredient', on_delete=models.CASCADE
+    )
     amount = models.PositiveIntegerField(verbose_name='Ingredient amount')
 
     def __str__(self):
@@ -103,7 +108,7 @@ class RecipeIngredient(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['recipe', 'ingredient'],
-                name='Unique ingredient for a recipe'
+                name='Unique ingredient for a recipe',
             ),
         ]
 

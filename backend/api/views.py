@@ -19,6 +19,7 @@ from .serializers import (
     SetPasswordSerializer,
     TagSerializer,
     SubscriptionSerializer,
+    RecipeSerializer
 )
 
 User = get_user_model()
@@ -146,3 +147,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         if self.request.method == 'POST':
             return CustomUserSerializer
         return super().get_serializer_class()
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
+    permission_classes = [AllowAny]
