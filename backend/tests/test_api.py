@@ -246,7 +246,7 @@ class AuthorizedUserTests(APITestCase):
             text=cls.fake.text(),
             name=cls.fake.sentence(),
             cooking_time=cls.fake.pyint(),
-            image=cls.fake.file_path(depth=3, category='image')
+            image=cls.fake.file_path(depth=3, category='image'),
         )
 
     def test_subscriptions_on_users_page(self):
@@ -300,6 +300,7 @@ class AuthorizedUserTests(APITestCase):
     def test_favorite_endpoint(self):
         """Tests for favorite endpoint."""
 
+        Favorite.objects.create(user=self.author, recipe=self.recipe) #needed for recipe.id test to fail if wrong id is returned
         previous_favs = Favorite.objects.count()
         url = reverse('favorite', kwargs={'recipe_id': self.recipe.id})
         response = self.user_client.post(url, {})
@@ -313,7 +314,14 @@ class AuthorizedUserTests(APITestCase):
         self.assertIsInstance(response.data['cooking_time'], int)
         self.assertIsInstance(response.data['image'], str)
         self.assertIsInstance(response.data['name'], str)
+        # self.assertEqual(response.data['id'], self.recipe.id)
+        self.assertEqual(response.data['name'], self.recipe.name)
+        self.assertEqual(
+            response.data['cooking_time'], self.recipe.cooking_time
+        )
         self.assertIn('://', response.data['image'])
+        response = self.user_client.post(url, {})
+        self.assertEqual(response.status_code, 400)
         response = self.user_client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Favorite.objects.count(), previous_favs)

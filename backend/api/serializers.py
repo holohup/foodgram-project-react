@@ -1,11 +1,13 @@
 import base64
 import datetime
 
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+
 # from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
@@ -118,8 +120,27 @@ class CustomTokenSerializer(serializers.Serializer):
         return Token.objects.get_or_create(user=self.validated_data)
 
 
+class RecipeMiniSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+        )
+        read_only_fields = ('id', 'name', 'cooking_time')
+
+    def get_image(self, favorite):
+        request = self.context['request']
+        return request.build_absolute_uri(favorite.image.url)
+
+
 class FavoriteSerializer(serializers.ModelSerializer):
 
+    # recipe = RecipeMiniSerializer(many=False, read_only=True)
     name = serializers.CharField(source='recipe.name', read_only=True)
     cooking_time = serializers.IntegerField(
         source='recipe.cooking_time', read_only=True
@@ -141,6 +162,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'cooking_time',
             'user_id',
             'recipe_id',
+            # 'recipe'
         )
 
     def validate(self, data):
@@ -189,3 +211,70 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Ingredient
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+
+    email = serializers.EmailField(source='author.email', read_only=True)
+    id = serializers.IntegerField(source='author.id', read_only=True)
+    recipes_count = serializers.SerializerMethodField(read_only=True)
+    username = serializers.CharField(source='author.username', read_only=True)
+    recipes = serializers.SerializerMethodField()
+    first_name = serializers.CharField(
+        source='author.first_name', read_only=True
+    )
+    last_name = serializers.CharField(
+        source='author.last_name', read_only=True
+    )
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        )
+        fields = '__all__'
+        # exclude = ('user', 'author')
+        extra_kwargs = {'user': {'write_only': True}}
+        model = Subscription
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=Subscription.objects.all(),
+                fields=['user', 'author'],
+                message='You can only subscribe once.',
+            )
+        ]
+
+    def validate_author(self, value):
+        if self.context['user'] == value:
+            raise serializers.ValidationError('Say no to self-subscriptions.')
+        return value
+
+    def get_recipes_count(self, subscription):
+        print(subscription)
+        return Recipe.objects.filter(author=subscription.author).count()
+
+    def get_recipes(self, subscription):
+        recipes_limit = (
+            int(self.context['request'].query_params.get('recipes_limit'))
+            or settings.DEFAULT_RECIPES_LIMIT
+        )
+        serializer = RecipeMiniSerializer(
+            many=True,
+            instance=Recipe.objects.filter(
+                author=subscription.author
+            ).order_by('-pub_date')[:recipes_limit],
+            context=self.context,
+        )
+        return serializer.data
+
+    def get_is_subscribed(self, subscription):
+        return Subscription.objects.filter(
+            user=self.context['user'], author=subscription.author
+        ).exists()
