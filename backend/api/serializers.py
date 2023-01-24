@@ -240,8 +240,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'recipes_count',
         )
         fields = '__all__'
-        # exclude = ('user', 'author')
-        extra_kwargs = {'user': {'write_only': True}}
+        extra_kwargs = {
+            'user': {'write_only': True},
+            'author': {'write_only': True},
+        }
         model = Subscription
         validators = [
             serializers.UniqueTogetherValidator(
@@ -257,12 +259,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return value
 
     def get_recipes_count(self, subscription):
-        print(subscription)
         return Recipe.objects.filter(author=subscription.author).count()
 
     def get_recipes(self, subscription):
-        recipes_limit = (
-            int(self.context['request'].query_params.get('recipes_limit'))
+        recipes_limit = int(
+            self.context['request'].query_params.get('recipes_limit')
             or settings.DEFAULT_RECIPES_LIMIT
         )
         serializer = RecipeMiniSerializer(

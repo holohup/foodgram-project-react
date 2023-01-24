@@ -124,7 +124,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionSerializer(data=data, context=context)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         methods=['get'],
@@ -133,7 +133,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     )
     def subscriptions(self, request):
         paginator = PageLimitPagination()
-        qs = Subscription.objects.filter(user=request.user)
+        qs = Subscription.objects.filter(user=request.user).order_by('-id')
         page = paginator.paginate_queryset(qs, request=request)
         context = {
             'user': request.user,
