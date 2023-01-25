@@ -43,6 +43,11 @@ class TagSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Tag
 
+    # def validate_id(self, id):
+    #     if not Tag.objects.filter(id=id).exists():
+    #         raise ValidationError(f'Tag with id {id} does not exist')
+    #     return id
+
     def to_internal_value(self, data):
         return Tag.objects.get(id=data)
 
@@ -63,15 +68,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-    # def to_internal_value(self, data):
-    #     print(self.context)
-    #     # RecipeIngredient.objects.create(
-    #     #     recipe=Recipe.objects.get,
-    #     #     ingredient=Ingredient.objects.get(id=id),
-    #     #     amount=amount
-    #     # )
-    #     return super().to_internal_value(data)
 
 
 class SetPasswordSerializer(serializers.Serializer):
@@ -276,9 +272,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    # author = CustomUserSubscriptionsSerializer(
-    #     read_only=True, default=serializers.CurrentUserDefault()
-    # )
     author = CustomUserSubscriptionsSerializer(read_only=True, required=False)
 
     class Meta:
@@ -296,20 +289,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
-    # def get_fields(self):
-    #     fields = super().get_fields()
-    #     method = self.context['request'].method
-    #     if method == 'POST' or method == 'PATCH':
-    #         for field in 'author', 'id', 'is_favorited', 'is_in_shopping_cart':
-    #             fields.pop(field)
-
-    #     return fields
-
-    # def get_ingredients(self, recipe):
-    #     qs = RecipeIngredient.objects.filter(recipe=recipe)
-    #     serializer = RecipeIngredientSerializer(instance=qs, many=True)
-    #     return serializer.data
-
     def get_is_favorited(self, recipe):
         user = self.context['request'].user
         return (
@@ -325,50 +304,47 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     # def validate_tags(self, data):
-    #     print(data)
-    #     if isinstance(data['tags'], list):
-    #         return data
-    #     raise ValidationError('Tags should be provided in a list.')
-
-    # def validate(self, data):
-    #     for ingredient_id in data['ingredients'].keys():
-    #         if not Ingredient.objects.filter(id=ingredient_id).exists():
-    #             raise ValidationError(
-    #                 f'Ingredient {ingredient_id} does not exist.'
-    #             )
+    #     errors = []
+    #     if not isinstance(data, list):
+    #         raise ValidationError('Tags should be provided in a list.')
+    #     for tag in data:
+    #         if not Tag.objects.filter(id=tag.id).exists():
+    #             errors.append(ValidationError(f'Tag id {tag.id} not found.'))
+    #     print(errors)
+    #     if errors:
+    #         raise ValidationError(errors)
     #     return data
 
-    # def to_internal_value(self, data):
-    #     print(data)
-    #     ingredients = data.pop('ingredients')
-    #     ingredients_amounts = {}
-    #     for ingredient in ingredients:
-    #         if ingredient['id'] not in ingredients_amounts:
-    #             ingredients_amounts[ingredient['id']] = 0
-    #         ingredients_amounts[ingredient['id']] += ingredient['amount']
-    #     data['ingredients'] = ingredients_amounts
-    #     print(data)
-    #     print('to_int_value')
-    #     return data
+    def validate_ingredients(self, data):
+        errors = []
+        for ingredient in data:
+            id = ingredient['ingredient']['id']
+            if not Ingredient.objects.filter(id=id).exists():
+                errors.append(
+                    ValidationError(f'Ingredient {id} not found').detail
+                )
+            if ingredient['amount'] <= 0:
+                errors.append(
+                    ValidationError(
+                        f'Amount of Ingredient {id} should be'
+                        ' a positive number.'
+                    ).detail
+                )
+        if errors:
+            raise ValidationError(errors)
+        return data
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
-        # print(validated_data)
-        # print(validated_data['recipeingredients'])
         ingredients = validated_data.pop('recipeingredients')
-        print(ingredients)
-        validated_data['author'] = self.context['request'].user
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for ingredient, aa in ingredients:
-            print(ingredient)
-            print(ingredient['id'])
-        # recipe.ingredients.set(JSONEncoder(ingredients))
-        # for id, amount in ingredients.items():
-        #     RecipeIngredient.objects.create(
-        #         recipe=recipe,
-        #         ingredient=Ingredient.objects.get(id=id),
-        #         amount=amount,
-        #     )
-        print('create')
+        for ingredient in ingredients:
+            RecipeIngredient.objects.create(
+                ingredient=Ingredient.objects.get(
+                    id=ingredient['ingredient']['id']
+                ),
+                recipe=recipe,
+                amount=ingredient['amount'],
+            )
         return recipe

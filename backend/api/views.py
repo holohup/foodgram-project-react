@@ -149,5 +149,5 @@ class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [AllowAny]
 
-    # def perform_create(self, serializer):
-    #     return serializer.save(author=self.request.user)
+    def perform_create(self, serializer):
+        return serializer.save(author=self.request.user)

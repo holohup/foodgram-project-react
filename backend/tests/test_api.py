@@ -373,6 +373,17 @@ class AuthorizedUserTests(APITestCase):
         ):
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
+        self.assertIsInstance(response.data['tags'], list)
+        self.assertIsInstance(response.data['ingredients'], list)
+        self.assertIsInstance(response.data['id'], int)
+        self.assertIsInstance(response.data['cooking_time'], int)
+        self.assertIsInstance(response.data['author'], dict)
+        self.assertIsInstance(response.data['is_favorited'], bool)
+        self.assertIsInstance(response.data['is_in_shopping_cart'], bool)
+        self.assertIsInstance(response.data['image'], str)
+        self.assertIsInstance(response.data['name'], str)
+        self.assertIsInstance(response.data['text'], str)
+
 
     def test_my_profile(self):
         """Test if the user profile is correct."""
