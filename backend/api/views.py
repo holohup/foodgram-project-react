@@ -6,21 +6,16 @@ from rest_framework import generics, mixins, status, views, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .pagination import PageLimitPagination
+
 from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 
-from .serializers import (
-    CustomTokenSerializer,
-    CustomUserSerializer,
-    CustomUserSubscriptionsSerializer,
-    FavoriteSerializer,
-    IngredientSerializer,
-    SetPasswordSerializer,
-    TagSerializer,
-    SubscriptionSerializer,
-    RecipeSerializer
-)
+from .pagination import PageLimitPagination
+from .serializers import (CustomTokenSerializer, CustomUserSerializer,
+                          CustomUserSubscriptionsSerializer,
+                          FavoriteSerializer, IngredientSerializer,
+                          RecipeSerializer, SetPasswordSerializer,
+                          SubscriptionSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -149,7 +144,10 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [AllowAny]
+
+    # def perform_create(self, serializer):
+    #     return serializer.save(author=self.request.user)

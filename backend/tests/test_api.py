@@ -5,10 +5,23 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Favorite, Ingredient, Recipe, Tag
+from recipes.models import Favorite, Ingredient, Recipe, Tag, RecipeIngredient
 from users.models import Subscription
 
 User = get_user_model()
+
+
+def generate_recipe(author):
+    """Generate and create a recipe by author."""
+
+    fake = Faker()
+    return Recipe.objects.create(
+        author=author,
+        text=fake.text(),
+        name=fake.sentence(),
+        cooking_time=fake.pyint(),
+        image=fake.file_path(depth=3, category='image'),
+    )
 
 
 class UnauthorizedUserTests(APITestCase):
@@ -29,7 +42,7 @@ class UnauthorizedUserTests(APITestCase):
             text=cls.fake.text(),
             name=cls.fake.sentence(),
             cooking_time=cls.fake.pyint(),
-            image='/images/test.jpg'
+            image='/images/test.jpg',
         )
 
     def test_get_token_and_logout(self):
@@ -187,8 +200,16 @@ class UnauthorizedUserTests(APITestCase):
         data = response.data['results'][0]
         self.assertEqual(len(data), 10)
         for field in (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
         ):
             with self.subTest(field=field):
                 self.assertIn(field, data)
@@ -202,7 +223,6 @@ class UnauthorizedUserTests(APITestCase):
         self.assertIsInstance(data['image'], str)
         self.assertIsInstance(data['name'], str)
         self.assertIsInstance(data['text'], str)
-
 
     def test_endpoints_with_invalid_tokens(self):
         """Invalid token requests return correct status codes."""
@@ -239,6 +259,7 @@ class UnauthorizedUserTests(APITestCase):
             reverse('users-set-password'),
             reverse('favorite', kwargs={'recipe_id': 1}),
             reverse('users-subscribe', kwargs={'pk': 1}),
+            # reverse('recipes-list'),  #TODO: when I implement permissions
         )
         no_token_client = APIClient()
         for endpoint in get_endpoints:
@@ -250,7 +271,9 @@ class UnauthorizedUserTests(APITestCase):
         for endpoint in post_endpoints:
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(
-                    no_token_client.post(endpoint, {}).status_code,
+                    no_token_client.post(
+                        endpoint, {}, format='json'
+                    ).status_code,
                     status.HTTP_401_UNAUTHORIZED,
                 )
 
@@ -272,23 +295,29 @@ class AuthorizedUserTests(APITestCase):
         cls.user_client.force_authenticate(cls.user)
         cls.author_client.force_authenticate(cls.author)
         cls.fake = Faker()
-        cls.recipe = Recipe.objects.create(
-            author=cls.author,
-            text=cls.fake.text(),
-            name=cls.fake.sentence(),
-            cooking_time=cls.fake.pyint(),
-            image=cls.fake.file_path(depth=3, category='image'),
-        )
-        cls.recipes = [
-            Recipe.objects.create(
-                author=cls.author,
-                text=cls.fake.text(),
-                name=cls.fake.sentence(),
-                cooking_time=cls.fake.pyint(),
-                image=cls.fake.file_path(depth=3, category='image'),
-            )
-            for _ in range(10)
-        ]
+        cls.recipe = generate_recipe(cls.author)
+        # names = cls.fake.words(3, unique=True)
+        # tags = [
+        #     Tag.objects.create(
+        #         name=name, color=cls.fake.color().upper(), slug=name
+        #     )
+        #     for name in names
+        # ]
+        # cls.recipe.tags.set(tags)
+        # names = cls.fake.words(5, unique=True)
+        # ingredients = [
+        #     Ingredient.objects.create(
+        #         name=name, measurement_unit=cls.fake.word()
+        #     )
+        #     for name in names
+        # ]
+        # for ingredient in ingredients:
+        #     RecipeIngredient.objects.create(
+        #         recipe=cls.recipe,
+        #         ingredient=ingredient,
+        #         amount=cls.fake.pyint(),
+        #     )
+        cls.recipes = [generate_recipe(author=cls.author) for _ in range(10)]
 
     def test_subscriptions_on_users_page(self):
         """Create a subscription, check that it shows on /users/ endpoint."""
@@ -303,6 +332,47 @@ class AuthorizedUserTests(APITestCase):
         for result in author_results:
             if result['id'] == self.user.id:
                 self.assertFalse(result['is_subscribed'])
+
+    def test_create_recipe(self):
+        """Tests recipe creation and response."""
+
+        prev_recipes = Recipe.objects.count()
+        url = reverse('recipes-list')
+        names = self.fake.words(3, unique=True)
+        tags = [
+            Tag.objects.create(
+                name=name, color=self.fake.color().upper(), slug=name
+            )
+            for name in names
+        ]
+        words = self.fake.words(3, unique=True)
+        ingredients = [
+            Ingredient.objects.create(
+                name=word, measurement_unit=self.fake.word()
+            )
+            for word in words
+        ]
+        recipe_presets = {
+            "ingredients": [
+                {"id": ingredient.id, "amount": self.fake.pyint()}
+                for ingredient in ingredients
+            ],
+            "tags": [tag.id for tag in tags],
+            "image": 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
+            "name": self.fake.sentence(),
+            "text": self.fake.sentence(),
+            "cooking_time": self.fake.pyint(),
+        }
+        response = self.author_client.post(url, recipe_presets, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Recipe.objects.count(), prev_recipes + 1)
+        self.assertEqual(len(response.data), 10)
+        for field in (
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
 
     def test_my_profile(self):
         """Test if the user profile is correct."""
@@ -459,7 +529,7 @@ class PaginationTests(APITestCase):
         cls.paginated_pages = {
             reverse('users-list'): 11,
             reverse('users-subscriptions'): 10,
-            reverse('recipes-list'): 10
+            reverse('recipes-list'): 10,
         }
         cls.fake = Faker()
         usernames = cls.fake.words(11, unique=True)

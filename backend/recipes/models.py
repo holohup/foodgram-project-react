@@ -47,7 +47,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Author',
     )
-    name = models.CharField(max_length=200, unique=True, verbose_name='name')
+    name = models.CharField(max_length=200, verbose_name='name')
     image = models.ImageField(
         'Picture', upload_to='recipes/', blank=False, null=False
     )
@@ -64,6 +64,7 @@ class Recipe(models.Model):
         through='RecipeIngredient',
         blank=False,
         verbose_name='Ingredients',
+        related_name='recipes'
     )
     tags = models.ManyToManyField(
         Tag, related_name='recipes', blank=True, verbose_name='Tags'
@@ -71,7 +72,7 @@ class Recipe(models.Model):
 
     def image_display(self):
         return mark_safe(
-            '<img src="%s" width="150" height="150" />' % (self.image.url)
+            f'<img src="{(self.image.url)}" width="150" />'
         )
 
     def __str__(self):
@@ -89,10 +90,10 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
-        Recipe, related_name='recipeingredient', on_delete=models.CASCADE
+        Recipe, related_name='recipeingredients', on_delete=models.CASCADE
     )
     ingredient = models.ForeignKey(
-        Ingredient, related_name='recipeingredient', on_delete=models.CASCADE
+        Ingredient, related_name='recipeingredients', on_delete=models.CASCADE
     )
     amount = models.PositiveIntegerField(verbose_name='Ingredient amount')
 
