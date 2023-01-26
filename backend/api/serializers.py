@@ -7,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
+from rest_framework.validators import UniqueTogetherValidator
 
 # from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token

@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class AdminModeratorAuthorPermission(permissions.BasePermission):
+class AuthorPermissions(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
@@ -11,7 +11,8 @@ class AdminModeratorAuthorPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return (
             request.method in permissions.SAFE_METHODS
-            or obj.author == request.user
-            or request.user.is_moderator
-            or request.user.is_admin
+            or request.method in ('PATCH', 'DELETE')
+            and request.user == obj.author
+            or request.method == ('POST')
+            and request.user.is_authenticated
         )

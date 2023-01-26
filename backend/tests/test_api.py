@@ -5,7 +5,7 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Favorite, Ingredient, Recipe, Tag, RecipeIngredient
+from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -259,7 +259,7 @@ class UnauthorizedUserTests(APITestCase):
             reverse('users-set-password'),
             reverse('favorite', kwargs={'recipe_id': 1}),
             reverse('users-subscribe', kwargs={'pk': 1}),
-            # reverse('recipes-list'),  #TODO: when I implement permissions
+            reverse('recipes-list'),
         )
         no_token_client = APIClient()
         for endpoint in get_endpoints:
@@ -296,27 +296,6 @@ class AuthorizedUserTests(APITestCase):
         cls.author_client.force_authenticate(cls.author)
         cls.fake = Faker()
         cls.recipe = generate_recipe(cls.author)
-        # names = cls.fake.words(3, unique=True)
-        # tags = [
-        #     Tag.objects.create(
-        #         name=name, color=cls.fake.color().upper(), slug=name
-        #     )
-        #     for name in names
-        # ]
-        # cls.recipe.tags.set(tags)
-        # names = cls.fake.words(5, unique=True)
-        # ingredients = [
-        #     Ingredient.objects.create(
-        #         name=name, measurement_unit=cls.fake.word()
-        #     )
-        #     for name in names
-        # ]
-        # for ingredient in ingredients:
-        #     RecipeIngredient.objects.create(
-        #         recipe=cls.recipe,
-        #         ingredient=ingredient,
-        #         amount=cls.fake.pyint(),
-        #     )
         cls.recipes = [generate_recipe(author=cls.author) for _ in range(10)]
 
     def test_subscriptions_on_users_page(self):
@@ -383,7 +362,6 @@ class AuthorizedUserTests(APITestCase):
         self.assertIsInstance(response.data['image'], str)
         self.assertIsInstance(response.data['name'], str)
         self.assertIsInstance(response.data['text'], str)
-
 
     def test_my_profile(self):
         """Test if the user profile is correct."""

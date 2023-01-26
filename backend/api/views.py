@@ -11,6 +11,7 @@ from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 
 from .pagination import PageLimitPagination
+from .permissions import AuthorPermissions
 from .serializers import (CustomTokenSerializer, CustomUserSerializer,
                           CustomUserSubscriptionsSerializer,
                           FavoriteSerializer, IngredientSerializer,
@@ -147,7 +148,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AuthorPermissions]
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
