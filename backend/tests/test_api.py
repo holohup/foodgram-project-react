@@ -5,7 +5,7 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Favorite, Ingredient, Recipe, Tag
+from recipes.models import Favorite, Ingredient, Recipe, Tag, ShoppingCart
 from users.models import Subscription
 
 User = get_user_model()
@@ -175,7 +175,7 @@ class UnauthorizedUserTests(APITestCase):
         objects = [
             Ingredient(name='Banana', measurement_unit='kilo'),
             Ingredient(name='avocado', measurement_unit='ea'),
-            Ingredient(name='burrito', measurement_unit='kilo')
+            Ingredient(name='burrito', measurement_unit='kilo'),
         ]
         Ingredient.objects.bulk_create(objects)
         response = self.client.get(reverse('ingredients-list') + '?name=a')
@@ -364,8 +364,16 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(Recipe.objects.count(), prev_recipes + 1)
         self.assertEqual(len(response.data), 10)
         for field in (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
         ):
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
@@ -527,6 +535,58 @@ class AuthorizedUserTests(APITestCase):
         response = self.user_client.get(url + '?recipes_limit=3')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 3)
+
+    def test_recipe_list_filters(self):
+        """Are the filters working correctly?"""
+
+        tags = [
+            Tag.objects.create(name=slug, slug=slug, color=slug)
+            for slug in ('red', 'green', 'blue')
+        ]
+        recipes = [
+            Recipe.objects.create(author=self.author, cooking_time=1)
+            for _ in range(3)
+        ]
+        recipes[0].tags.set([tags[0], tags[1]])
+        recipes[1].tags.set([tags[1], tags[2]])
+        recipes[2].tags.set([tags[2], tags[0]])
+        Favorite.objects.create(user=self.user, recipe=recipes[0])
+        ShoppingCart.objects.create(user=self.user, recipe=recipes[1])
+        response = self.user_client.get(reverse('recipes-list'))
+        # prev_recipes = Recipe.objects.count()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # print(response.data['results'])
+        # self.assertEqual(len(response.data['results']), prev_recipes + 3)
+        # print(response.data['results'][0])
+        for i in range(len(recipes)):
+            with self.subTest(i=i):
+                self.assertEqual(
+                    recipes[i].id, response.data['results'][2 - i]['id']
+                )
+        response = self.user_client.get(
+            reverse('recipes-list') + '?tags=green'
+        )
+        self.assertEqual(len(response.data['results']), 2)
+        self.assertEqual(
+            response.data['results'][0]['tags'][0]['slug'], tags[1].slug
+        )
+        self.assertEqual(
+            response.data['results'][1]['tags'][1]['slug'], tags[1].slug
+        )
+        response = self.user_client.get(
+            reverse('recipes-list') + '?is_favorited=1'
+        )
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(
+            response.data['results'][0]['author']['id'], self.author.id
+        )
+        response = self.user_client.get(
+            reverse('recipes-list') + '?is_in_shopping_cart=1'
+        )
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(
+            response.data['results'][0]['is_in_shopping_cart'], True
+        )
 
 
 class PaginationTests(APITestCase):

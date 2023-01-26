@@ -9,7 +9,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django_filters.filters import OrderingFilter
-
+from django.http.request import QueryDict
 from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
 from .filters import StartswithCaseInsensitiveFilter
@@ -171,17 +171,26 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
-    permission_classes = [AuthorPermissions]
+    permission_classes = (AuthorPermissions, )
+    filter_backends = (DjangoFilterBackend, )
+    filterset_fields = ('author',)
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        params = self.request.query_params
-        is_favorited = params.get('is_favorited')
-        is_in_shopping_cart = params.get('is_in_shopping_cart')
-        author = params.get('author')
-        tags = params.get('tags')
-        print(is_favorited, is_in_shopping_cart, author, tags)
         queryset = Recipe.objects.all()
+        if self.action != 'list':
+            return queryset
+        params = self.request.query_params
+        tags = params.getlist('tags')
+        if tags:
+            queryset = queryset.filter(tags__slug__in=tags)
+        user = self.request.user
+        if user.is_anonymous:
+            return queryset
+        if params.get('is_favorited') == '1':
+            queryset = queryset.filter(favorite__user=user)
+        if params.get('is_in_shopping_cart') == '1':
+            queryset = queryset.filter(shop_cart__user=user)
         return queryset
