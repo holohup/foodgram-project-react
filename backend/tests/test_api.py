@@ -169,6 +169,23 @@ class UnauthorizedUserTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_ingredients_search(self):
+        """Tests if search behaves as expected and puts startswith first."""
+
+        objects = [
+            Ingredient(name='Banana', measurement_unit='kilo'),
+            Ingredient(name='avocado', measurement_unit='ea'),
+            Ingredient(name='burrito', measurement_unit='kilo')
+        ]
+        Ingredient.objects.bulk_create(objects)
+        response = self.client.get(reverse('ingredients-list') + '?name=a')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['name'], 'avocado')
+        self.assertEqual(response.data[1]['name'], 'Banana')
+        response = self.client.get(reverse('ingredients-list'))
+        self.assertEqual(len(response.data), 3)
+
     def test_user_profile(self):
         """Existing user is visible to others."""
 

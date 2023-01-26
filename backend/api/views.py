@@ -1,22 +1,32 @@
 # from django.shortcuts import get_object_or_404, render
 # from rest_framework import filters
 from django.contrib.auth import get_user_model
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, mixins, status, views, viewsets
+
+from rest_framework import generics, mixins, status, views, viewsets, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django_filters.filters import OrderingFilter
 
 from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
-
+from .filters import StartswithCaseInsensitiveFilter
+from .search import UnquoteSearchFilter
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
-from .serializers import (CustomTokenSerializer, CustomUserSerializer,
-                          CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          RecipeSerializer, SetPasswordSerializer,
-                          SubscriptionSerializer, TagSerializer)
+from .serializers import (
+    CustomTokenSerializer,
+    CustomUserSerializer,
+    CustomUserSubscriptionsSerializer,
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeSerializer,
+    SetPasswordSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
@@ -41,6 +51,23 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class IngredientViewSet(TagViewSet):
     serializer_class = IngredientSerializer
     queryset = Ingredient.objects.all().order_by('name')
+    filter_backends = (UnquoteSearchFilter, DjangoFilterBackend)
+    search_fields = ('name',)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        search_term = request.query_params.get('name')
+        if not search_term:
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+
+        data_startswith = self.get_serializer(
+            queryset.filter(name__istartswith=search_term), many=True
+        ).data
+        data_notstartswith = self.get_serializer(
+            queryset.exclude(name__istartswith=search_term), many=True
+        ).data
+        return Response(list(data_startswith) + list(data_notstartswith))
 
 
 class FavoriteView(views.APIView):
@@ -112,7 +139,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         context = {
             'user': request.user,
             'author': get_object_or_404(User, id=pk),
-            'request': request
+            'request': request,
         }
         data = {
             'user': context['user'].id,
@@ -132,10 +159,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         paginator = PageLimitPagination()
         qs = Subscription.objects.filter(user=request.user).order_by('-id')
         page = paginator.paginate_queryset(qs, request=request)
-        context = {
-            'user': request.user,
-            'request': request
-        }
+        context = {'user': request.user, 'request': request}
         serializer = SubscriptionSerializer(page, many=True, context=context)
         return paginator.get_paginated_response(serializer.data)
 
@@ -146,9 +170,18 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [AuthorPermissions]
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        params = self.request.query_params
+        is_favorited = params.get('is_favorited')
+        is_in_shopping_cart = params.get('is_in_shopping_cart')
+        author = params.get('author')
+        tags = params.get('tags')
+        print(is_favorited, is_in_shopping_cart, author, tags)
+        queryset = Recipe.objects.all()
+        return queryset

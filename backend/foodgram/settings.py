@@ -107,6 +107,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'api.pagination.PageLimitPagination',
     'PAGE_SIZE': 5,
+    'SEARCH_PARAM': 'name',
 }
 
 # DJOSER = {
