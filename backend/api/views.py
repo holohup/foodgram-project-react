@@ -12,7 +12,7 @@ from django_filters.filters import OrderingFilter
 from django.http.request import QueryDict
 from recipes.models import Favorite, Ingredient, Recipe, Tag
 from users.models import Subscription
-from .filters import StartswithCaseInsensitiveFilter
+
 from .search import UnquoteSearchFilter
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions

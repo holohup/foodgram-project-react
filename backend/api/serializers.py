@@ -13,6 +13,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 
+
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -303,18 +304,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             and ShoppingCart.objects.filter(user=user, recipe=recipe).exists()
         )
 
-    # def validate_tags(self, data):
-    #     errors = []
-    #     if not isinstance(data, list):
-    #         raise ValidationError('Tags should be provided in a list.')
-    #     for tag in data:
-    #         if not Tag.objects.filter(id=tag.id).exists():
-    #             errors.append(ValidationError(f'Tag id {tag.id} not found.'))
-    #     print(errors)
-    #     if errors:
-    #         raise ValidationError(errors)
-    #     return data
-
     def validate_ingredients(self, data):
         errors = []
         for ingredient in data:
@@ -334,11 +323,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise ValidationError(errors)
         return data
 
-    def create(self, validated_data):
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('recipeingredients')
-        recipe = Recipe.objects.create(**validated_data)
+    def _trim_data(self, data):
+        return data.pop('tags'), data.pop('recipeingredients')
+
+    def _apply_data(self, recipe, tags, ingredients):
         recipe.tags.set(tags)
+        RecipeIngredient.objects.filter(recipe=recipe).delete()
         for ingredient in ingredients:
             RecipeIngredient.objects.create(
                 ingredient=Ingredient.objects.get(
@@ -347,4 +337,15 @@ class RecipeSerializer(serializers.ModelSerializer):
                 recipe=recipe,
                 amount=ingredient['amount'],
             )
+
+    def update(self, instance, validated_data):
+        tags, ingredients = self._trim_data(validated_data)
+        super().update(instance, validated_data)
+        self._apply_data(instance, tags, ingredients)
+        return instance
+
+    def create(self, validated_data):
+        tags, ingredients = self._trim_data(validated_data)
+        recipe = Recipe.objects.create(**validated_data)
+        self._apply_data(recipe, tags, ingredients)
         return recipe

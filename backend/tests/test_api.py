@@ -5,7 +5,14 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from recipes.models import Favorite, Ingredient, Recipe, Tag, ShoppingCart
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    Tag,
+    ShoppingCart,
+    RecipeIngredient,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -349,15 +356,15 @@ class AuthorizedUserTests(APITestCase):
             for word in words
         ]
         recipe_presets = {
-            "ingredients": [
-                {"id": ingredient.id, "amount": self.fake.pyint()}
+            'ingredients': [
+                {'id': ingredient.id, 'amount': self.fake.pyint()}
                 for ingredient in ingredients
             ],
-            "tags": [tag.id for tag in tags],
-            "image": 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
-            "name": self.fake.sentence(),
-            "text": self.fake.sentence(),
-            "cooking_time": self.fake.pyint(),
+            'tags': [tag.id for tag in tags],
+            'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
+            'name': self.fake.sentence(),
+            'text': self.fake.sentence(),
+            'cooking_time': self.fake.pyint(),
         }
         response = self.author_client.post(url, recipe_presets, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -553,11 +560,7 @@ class AuthorizedUserTests(APITestCase):
         Favorite.objects.create(user=self.user, recipe=recipes[0])
         ShoppingCart.objects.create(user=self.user, recipe=recipes[1])
         response = self.user_client.get(reverse('recipes-list'))
-        # prev_recipes = Recipe.objects.count()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # print(response.data['results'])
-        # self.assertEqual(len(response.data['results']), prev_recipes + 3)
-        # print(response.data['results'][0])
         for i in range(len(recipes)):
             with self.subTest(i=i):
                 self.assertEqual(
@@ -587,6 +590,61 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(
             response.data['results'][0]['is_in_shopping_cart'], True
         )
+
+    def test_recipes_update(self):
+        """Test if update works correctly."""
+
+        tags = [
+            Tag.objects.create(name=slug, slug=slug, color=slug)
+            for slug in ('red', 'green', 'blue')
+        ]
+        ingredients = [
+            Ingredient.objects.create(name=name, measurement_unit=m_unit)
+            for name, m_unit in {'Carrots': 'g.', 'Water': 'oz'}.items()
+        ]
+        recipe = Recipe.objects.create(
+            author=self.author, name='test_upd', image='1.jpg', cooking_time=1
+        )
+        recipe.tags.set([tags[0], tags[1]])
+        RecipeIngredient.objects.create(
+            recipe=recipe, ingredient=ingredients[0], amount=10
+        )
+
+        payload = {
+            'tags': [tags[1].id, tags[2].id],
+            'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
+            'name': 'test_update_name',
+            'text': 'test_update_text',
+            'cooking_time': 10,
+            'ingredients': [dict(id=ingredients[1].id, amount=-1)],
+        }
+        url = reverse('recipes-detail', kwargs={'pk': recipe.id})
+        response = self.user_client.patch(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self.author_client.patch(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        payload['ingredients'] = [dict(id=ingredients[1].id, amount=5)]
+        response = self.author_client.patch(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(len(data['tags']), 2)
+        self.assertEqual(len(data['ingredients']), 1)
+        self.assertEqual(data['name'], 'test_update_name')
+        recipe.refresh_from_db()
+        for field in 'cooking_time', 'text', 'name':
+            with self.subTest(field=field):
+                self.assertEqual(getattr(recipe, field), payload[field])
+        self.assertEqual(
+            RecipeIngredient.objects.get(
+                recipe=recipe, ingredient=ingredients[1]
+            ).amount, 5,
+        )
+        self.assertEqual(recipe.ingredients.count(), 1)
+        self.assertEqual(recipe.tags.count(), 2)
+        self.assertIn(tags[1], recipe.tags.all())
+        self.assertIn(tags[2], recipe.tags.all())
+        self.assertIn(ingredients[1], recipe.ingredients.all())
+        self.assertFalse(recipe.image.url.endswith('1.jpg'))
 
 
 class PaginationTests(APITestCase):
