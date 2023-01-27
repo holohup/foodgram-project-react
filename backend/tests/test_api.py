@@ -301,6 +301,39 @@ class UnauthorizedUserTests(APITestCase):
                     status.HTTP_401_UNAUTHORIZED,
                 )
 
+    def test_recipe_detail_fields(self):
+        """Are the returned fields in recipe details correct."""
+
+        recipe = generate_recipe(author=self.testuser)
+        response = self.client.get(
+            reverse('recipes-detail', kwargs={'pk': recipe.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 10)
+        for field in (
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        for field in ('id', 'name', 'text', 'cooking_time'):
+            with self.subTest(field=field):
+                self.assertEqual(getattr(recipe, field), response.data[field])
+        self.assertIsInstance(response.data['author'], dict)
+        self.assertIsInstance(response.data['tags'], list)
+        self.assertIsInstance(response.data['ingredients'], list)
+        self.assertFalse(response.data['is_favorited'])
+        self.assertFalse(response.data['is_in_shopping_cart'])
+        self.assertTrue(response.data['image'].endswith(recipe.image.url))
+
 
 class AuthorizedUserTests(APITestCase):
     """Tests for authorized clients of non-admin level."""
@@ -637,7 +670,8 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(
             RecipeIngredient.objects.get(
                 recipe=recipe, ingredient=ingredients[1]
-            ).amount, 5,
+            ).amount,
+            5,
         )
         self.assertEqual(recipe.ingredients.count(), 1)
         self.assertEqual(recipe.tags.count(), 2)
@@ -645,6 +679,23 @@ class AuthorizedUserTests(APITestCase):
         self.assertIn(tags[2], recipe.tags.all())
         self.assertIn(ingredients[1], recipe.ingredients.all())
         self.assertFalse(recipe.image.url.endswith('1.jpg'))
+
+    def test_delete_recipe(self):
+        """Tests if recipe deletion works as intended."""
+
+        recipe = generate_recipe(self.author)
+        url = reverse('recipes-detail', kwargs={'pk': recipe.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.user_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        recipes_amount = Recipe.objects.count()
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Recipe.objects.count(), recipes_amount - 1)
+        self.assertEqual(Recipe.objects.filter(id=recipe.id).count(), 0)
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class PaginationTests(APITestCase):
