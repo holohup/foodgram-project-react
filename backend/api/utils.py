@@ -15,4 +15,3 @@ def get_grocery_list(user: User):
             result[key] = 0
         result[key] += item.amount
     return result
-

@@ -1,8 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingCart
 from api.utils import get_grocery_list
+from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingCart
 
 User = get_user_model()
 

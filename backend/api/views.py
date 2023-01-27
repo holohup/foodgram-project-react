@@ -1,27 +1,28 @@
 # from django.shortcuts import get_object_or_404, render
 # from rest_framework import filters
 from django.contrib.auth import get_user_model
+from django.http.request import QueryDict
+from django.shortcuts import get_list_or_404, get_object_or_404
+from django_filters.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
-
-from rest_framework import generics, mixins, status, views, viewsets, filters
+from rest_framework import filters, generics, mixins, status, views, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from django_filters.filters import OrderingFilter
-from django.http.request import QueryDict
-from recipes.models import Favorite, Ingredient, Recipe, Tag
+
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription
 
-from .search import UnquoteSearchFilter
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
+from .search import UnquoteSearchFilter
 from .serializers import (
     CustomTokenSerializer,
     CustomUserSerializer,
     CustomUserSubscriptionsSerializer,
     FavoriteSerializer,
     IngredientSerializer,
+    RecipeMiniSerializer,
     RecipeSerializer,
     SetPasswordSerializer,
     SubscriptionSerializer,
@@ -171,9 +172,41 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
-    permission_classes = (AuthorPermissions, )
-    filter_backends = (DjangoFilterBackend, )
+    permission_classes = (AuthorPermissions,)
+    filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('author',)
+
+    @action(
+        methods=['post', 'delete'],
+        detail=True,
+        permission_classes=[IsAuthenticated],
+    )
+    def shopping_cart(self, request, pk):
+        if self.request.method == "DELETE":
+            qs = ShoppingCart.objects.filter(
+                user=self.request.user, recipe__id=pk
+            )
+            if not qs:
+                return Response(
+                    {'msg': 'The subscription does not exist'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            qs.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        recipe = get_object_or_404(Recipe, id=pk)
+        _, created = ShoppingCart.objects.get_or_create(
+            user=request.user, recipe=recipe
+        )
+        if created:
+            context = {}
+            context['request'] = request
+            serializer = RecipeMiniSerializer(instance=recipe, context=context)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {'msg': 'Already in the shopping cart.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)

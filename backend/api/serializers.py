@@ -7,21 +7,13 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
-
 # from djoser.serializers import TokenCreateSerializer
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
+from rest_framework.validators import UniqueTogetherValidator
 
-
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -290,6 +282,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
+    def __init__(self, instance=None, **kwargs):
+        self._tags = None
+        self._ingredients = None
+        super().__init__(instance, **kwargs)
+
     def get_is_favorited(self, recipe):
         user = self.context['request'].user
         return (
@@ -323,13 +320,14 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise ValidationError(errors)
         return data
 
-    def _trim_data(self, data):
-        return data.pop('tags'), data.pop('recipeingredients')
+    def _stash_data(self, validated_data):
+        self._tags = validated_data.pop('tags')
+        self._ingredients = validated_data.pop('recipeingredients')
 
-    def _apply_data(self, recipe, tags, ingredients):
-        recipe.tags.set(tags)
+    def _apply_data(self, recipe):
+        recipe.tags.set(self._tags)
         RecipeIngredient.objects.filter(recipe=recipe).delete()
-        for ingredient in ingredients:
+        for ingredient in self._ingredients:
             RecipeIngredient.objects.create(
                 ingredient=Ingredient.objects.get(
                     id=ingredient['ingredient']['id']
@@ -339,13 +337,13 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
 
     def update(self, instance, validated_data):
-        tags, ingredients = self._trim_data(validated_data)
+        self._stash_data(validated_data)
         super().update(instance, validated_data)
-        self._apply_data(instance, tags, ingredients)
+        self._apply_data(instance)
         return instance
 
     def create(self, validated_data):
-        tags, ingredients = self._trim_data(validated_data)
+        self._stash_data(validated_data)
         recipe = Recipe.objects.create(**validated_data)
-        self._apply_data(recipe, tags, ingredients)
+        self._apply_data(recipe)
         return recipe

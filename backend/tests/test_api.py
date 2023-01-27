@@ -9,9 +9,9 @@ from recipes.models import (
     Favorite,
     Ingredient,
     Recipe,
-    Tag,
-    ShoppingCart,
     RecipeIngredient,
+    ShoppingCart,
+    Tag,
 )
 from users.models import Subscription
 
@@ -284,6 +284,7 @@ class UnauthorizedUserTests(APITestCase):
             reverse('favorite', kwargs={'recipe_id': 1}),
             reverse('users-subscribe', kwargs={'pk': 1}),
             reverse('recipes-list'),
+            reverse('recipes-detail', kwargs={'pk': 1}) + 'shopping_cart/',
         )
         no_token_client = APIClient()
         for endpoint in get_endpoints:
@@ -696,6 +697,37 @@ class AuthorizedUserTests(APITestCase):
         self.assertEqual(Recipe.objects.filter(id=recipe.id).count(), 0)
         response = self.author_client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_shoppingcart_endpoint(self):
+        """Check if post/delete work correctly."""
+
+        recipe = generate_recipe(author=self.author)
+        url = (
+            reverse('recipes-detail', kwargs={'pk': recipe.id})
+            + 'shopping_cart/'
+        )
+        carts_amount = ShoppingCart.objects.count()
+        response = self.author_client.post(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ShoppingCart.objects.count(), carts_amount + 1)
+        self.assertEqual(
+            ShoppingCart.objects.get(recipe=recipe, user=self.author),
+            ShoppingCart.objects.last(),
+        )
+        self.assertEqual(len(response.data), 4)
+        for field in 'id', 'name', 'image', 'cooking_time':
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        response = self.author_client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class PaginationTests(APITestCase):
