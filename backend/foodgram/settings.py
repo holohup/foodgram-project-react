@@ -113,19 +113,23 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    #     'HIDE_USERS': False,
-    #     'PERMISSIONS': {
+        'HIDE_USERS': False,
+        'PERMISSIONS': {
+            'user_list': ['rest_framework.permissions.AllowAny'],
+            'user': ['api.permissions.ReadOnly']
     #     # 'user': ['rest_framework.permissions.IsAuthenticated'],
     #     # 'user_list': ['rest_framework.permissions.AllowAny'],
     #     # 'user': ['rest_framework.permissions.AllowAny'],
     #     # 'current_user': ['rest_framework.permissions.isAuthenticated']
-    #     },
-    # 'SERIALIZERS': {
-    #         # 'user': 'api.serializers.CustomUserListSerializer',
+        },
+    'SERIALIZERS': {
+            'user': 'api.serializers.CustomUserSubscriptionsSerializer',
+            'user_create': 'api.serializers.CustomUserSerializer',
+            'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
     #         # 'user_create': 'api.serializers.CustomUserSerializer',
     #         # 'current_user': 'api.serializers.CustomUserListSerializer'
     # 'token_create': 'api.serializers.CustomTokenCreateSerializer'
-    # }
+    }
 }
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1', '*']

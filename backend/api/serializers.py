@@ -2,18 +2,20 @@ import base64
 import datetime
 
 from django.conf import settings
-from django.contrib.auth import authenticate, get_user_model
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-# from djoser.serializers import TokenCreateSerializer
-from rest_framework.authtoken.models import Token
 from rest_framework.serializers import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -36,11 +38,6 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('name', 'color', 'slug', 'id')
         model = Tag
 
-    # def validate_id(self, id):
-    #     if not Tag.objects.filter(id=id).exists():
-    #         raise ValidationError(f'Tag with id {id} does not exist')
-    #     return id
-
     def to_internal_value(self, data):
         return Tag.objects.get(id=data)
 
@@ -61,30 +58,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-
-class SetPasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(
-        max_length=150, write_only=True, required=True
-    )
-    current_password = serializers.CharField(
-        max_length=150, write_only=True, required=True
-    )
-
-    def validate_current_password(self, value):
-        if self.context['request'].user.check_password(value):
-            return value
-        raise ValidationError('Invalid current password.')
-
-    def validate_new_password(self, value):
-        if not validate_password(value):
-            return value
-        raise ValidationError('Could not validate password')
-
-    def validate(self, data):
-        if data['new_password'] == data['current_password']:
-            raise ValidationError('Cannot change password to the same value.')
-        return data
 
 
 class RecipeMiniSerializer(serializers.ModelSerializer):
@@ -192,7 +165,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'recipes',
             'recipes_count',
             'user',
-            'author'
+            'author',
         )
 
         extra_kwargs = {
