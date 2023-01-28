@@ -8,8 +8,14 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase, override_settings
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -80,7 +86,8 @@ class UnauthorizedUserTests(APITestCase):
             reverse('recipes-favorite', kwargs={'pk': self.recipe.id}),
             reverse('users-subscribe', kwargs={'id': self.author.id}),
             reverse('recipes-list'),
-            reverse('recipes-detail', kwargs={'pk': self.recipe.id}) + 'shopping_cart/',
+            reverse('recipes-detail', kwargs={'pk': self.recipe.id})
+            + 'shopping_cart/',
         )
         for endpoint in get_endpoints:
             with self.subTest(endpoint=endpoint):
@@ -91,9 +98,7 @@ class UnauthorizedUserTests(APITestCase):
         for endpoint in post_endpoints:
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(
-                    self.client.post(
-                        endpoint, {}, format='json'
-                    ).status_code,
+                    self.client.post(endpoint, {}, format='json').status_code,
                     status.HTTP_401_UNAUTHORIZED,
                 )
 
@@ -557,12 +562,18 @@ class RecipesEndpointsTests(APITestCase):
                 {'id': ingredient.id, 'amount': self.fake.pyint()}
                 for ingredient in ingredients
             ],
-            'tags': [tag.id for tag in tags],
+            'tags': [],
             'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
             'name': self.fake.sentence(),
             'text': self.fake.sentence(),
             'cooking_time': self.fake.pyint(),
         }
+        response = self.author_client.post(url, recipe_presets, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        recipe_presets['tags'] = [1000, 2000]
+        response = self.author_client.post(url, recipe_presets, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        recipe_presets['tags'] = [tag.id for tag in tags]
         response = self.author_client.post(url, recipe_presets, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Recipe.objects.count(), prev_recipes + 1)
@@ -716,9 +727,7 @@ class FavoriteEndpointsTests(APITestCase):
     def test_favorite_endpoint(self):
         """Tests for favorite endpoint."""
 
-        # Favorite.objects.create(
-        #     user=self.author, recipe=self.recipe
-        # )  # needed for recipe.id test to fail if wrong id is returned
+        Favorite.objects.create(user=self.author, recipe=self.recipe)
         previous_favs = Favorite.objects.count()
         url = reverse('recipes-favorite', kwargs={'pk': self.recipe.id})
         response = self.user_client.post(url, {})
@@ -732,7 +741,7 @@ class FavoriteEndpointsTests(APITestCase):
         self.assertIsInstance(response.data['cooking_time'], int)
         self.assertIsInstance(response.data['image'], str)
         self.assertIsInstance(response.data['name'], str)
-        # self.assertEqual(response.data['id'], self.recipe.id)
+        self.assertEqual(response.data['id'], self.recipe.id)
         self.assertEqual(response.data['name'], self.recipe.name)
         self.assertEqual(
             response.data['cooking_time'], self.recipe.cooking_time
@@ -770,14 +779,15 @@ class TagsEndpointsTests(APITestCase):
         self.assertEqual(len(response.data), 4)
         for field in 'color', 'id', 'name', 'slug':
             with self.subTest(field=field):
-                self.assertEqual(response.data[field], getattr(self.tags[0], field))
+                self.assertEqual(
+                    response.data[field], getattr(self.tags[0], field)
+                )
 
         response = self.client.get(reverse('tags-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), len(self.names))
         response = self.client.get(reverse('tags-detail', kwargs={'pk': 100}))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
 
 
 class PaginationTests(APITestCase):

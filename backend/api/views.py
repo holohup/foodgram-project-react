@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import status, views, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -53,28 +53,6 @@ class IngredientViewSet(TagViewSet):
             queryset.exclude(name__istartswith=search_term), many=True
         ).data
         return Response(list(data_startswith) + list(data_notstartswith))
-
-
-# class FavoriteView(views.APIView):
-#     def post(self, request, **kwargs):
-#         recipe = get_object_or_404(Recipe, pk=kwargs['recipe_id'])
-#         serializer = FavoriteSerializer(
-#             data={'recipe_id': recipe.id, 'user_id': self.request.user.id},
-#             context={'request': request},
-#         )
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, **kwargs):
-#         favorite = get_object_or_404(
-#             Favorite,
-#             user=request.user,
-#             recipe=Recipe.objects.get(id=self.kwargs.get('recipe_id')),
-#         )
-#         favorite.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CustomUserViewSet(UserViewSet):
@@ -129,8 +107,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filterset_fields = ('author',)
 
     @action(
-        methods=['post', 'delete'],
-        detail=True,
+        ['post', 'delete'], detail=True,
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, pk):
@@ -138,7 +115,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             qs = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
             if not qs:
                 return Response(
-                    {'msg': 'The subscription does not exist'},
+                    ('This recipe does not exist in the shopping cart.'),
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             qs.delete()
@@ -154,14 +131,11 @@ class RecipesViewSet(viewsets.ModelViewSet):
             serializer = RecipeMiniSerializer(instance=recipe, context=context)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(
-            {'msg': 'Already in the shopping cart.'},
+            ('This recipe is already in the shopping cart.'),
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    @action(
-        ['post', 'delete'],
-        detail=True,
-    )
+    @action(['post', 'delete'], detail=True)
     def favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         if request.method == 'DELETE':

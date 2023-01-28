@@ -31,8 +31,11 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'color', 'slug', 'id')
         model = Tag
+        read_only_fields = ('name', 'color', 'slug', 'id')
 
     def to_internal_value(self, data):
+        if not Tag.objects.filter(id=data):
+            raise ValidationError(f'Tag {data} not found.')
         return Tag.objects.get(id=data)
 
 
@@ -113,6 +116,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     user_id = serializers.CharField(write_only=True)
     recipe_id = serializers.CharField(write_only=True)
+    id = serializers.IntegerField(source='recipe.id', read_only=True)
 
     def get_image(self, favorite):
         request = self.context['request']
@@ -278,6 +282,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             user.is_authenticated
             and ShoppingCart.objects.filter(user=user, recipe=recipe).exists()
         )
+
+    def validate_tags(self, data):
+        if not data:
+            raise ValidationError('Tags can not be an empty list.')
+        return data
 
     def validate_ingredients(self, data):
         errors = []
