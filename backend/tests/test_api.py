@@ -117,8 +117,8 @@ class AuthsEndpointsTests(APITestCase):
         user = User.objects.create(email=data['email'])
         user.set_password(data['password'])
         user.save()
-        response = self.client.post(reverse('get_token'), data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        response = self.client.post(reverse('login'), data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('auth_token', response.data)
         self.assertEqual(len(response.data), 1)
         token = response.data['auth_token']
@@ -136,7 +136,7 @@ class AuthsEndpointsTests(APITestCase):
 
 
 class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
-    """ "Tests for auth endpoints."""
+    """Tests for auth endpoints."""
 
     @classmethod
     def setUpClass(cls):

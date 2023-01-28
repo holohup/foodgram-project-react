@@ -33,7 +33,7 @@ class Base64ImageField(serializers.ImageField):
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'color', 'slug', 'id')
         model = Tag
 
     # def validate_id(self, id):
@@ -47,7 +47,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        fields = ('measurement_unit', 'id', 'name')
         model = Ingredient
 
 
@@ -85,27 +85,6 @@ class SetPasswordSerializer(serializers.Serializer):
         if data['new_password'] == data['current_password']:
             raise ValidationError('Cannot change password to the same value.')
         return data
-
-
-class CustomTokenSerializer(serializers.Serializer):
-
-    email = serializers.EmailField(write_only=True, required=True)
-    password = serializers.CharField(
-        max_length=150, write_only=True, required=True
-    )
-    auth_token = serializers.CharField(required=False)
-
-    def validate(self, data):
-        user = authenticate(
-            username=get_object_or_404(User, email=data['email']).username,
-            password=data['password'],
-        )
-        if user is not None:
-            return user
-        raise ValidationError(f'Wrong password: {data["password"]}.')
-
-    def save(self):
-        return Token.objects.get_or_create(user=self.validated_data)
 
 
 class RecipeMiniSerializer(serializers.ModelSerializer):
@@ -149,7 +128,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'cooking_time',
             'user_id',
             'recipe_id',
-            # 'recipe'
         )
 
     def validate(self, data):
@@ -213,8 +191,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'is_subscribed',
             'recipes',
             'recipes_count',
+            'user',
+            'author'
         )
-        fields = '__all__'
+
         extra_kwargs = {
             'user': {'write_only': True},
             'author': {'write_only': True},

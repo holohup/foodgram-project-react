@@ -111,24 +111,22 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'name',
 }
 
-# DJOSER = {
-# 'LOGIN_FIELD': 'email',
-#     'HIDE_USERS': False,
-#     'PERMISSIONS': {
-
-#     # 'user': ['rest_framework.permissions.IsAuthenticated'],
-#     # 'user_list': ['rest_framework.permissions.AllowAny'],
-#     # 'user': ['rest_framework.permissions.AllowAny'],
-#     # 'current_user': ['rest_framework.permissions.isAuthenticated']
-#     },
-# 'SERIALIZERS': {
-#         # 'user': 'api.serializers.CustomUserListSerializer',
-#         # 'user_create': 'api.serializers.CustomUserSerializer',
-#         # 'current_user': 'api.serializers.CustomUserListSerializer'
-# 'token_create': 'api.serializers.CustomTokenCreateSerializer'
-# }
-
-# }
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    #     'HIDE_USERS': False,
+    #     'PERMISSIONS': {
+    #     # 'user': ['rest_framework.permissions.IsAuthenticated'],
+    #     # 'user_list': ['rest_framework.permissions.AllowAny'],
+    #     # 'user': ['rest_framework.permissions.AllowAny'],
+    #     # 'current_user': ['rest_framework.permissions.isAuthenticated']
+    #     },
+    # 'SERIALIZERS': {
+    #         # 'user': 'api.serializers.CustomUserListSerializer',
+    #         # 'user_create': 'api.serializers.CustomUserSerializer',
+    #         # 'current_user': 'api.serializers.CustomUserListSerializer'
+    # 'token_create': 'api.serializers.CustomTokenCreateSerializer'
+    # }
+}
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1', '*']
 # CORS_ALLOWED_ORIGINS = [*]

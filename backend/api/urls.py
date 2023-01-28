@@ -2,10 +2,11 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (CustomUserViewSet, FavoriteView, IngredientViewSet,
-                    RecipesViewSet, TagViewSet, get_token)
+                    RecipesViewSet, TagViewSet, 
+                    # get_token
+                    )
 
 # from djoser.serializers import SetPasswordSerializer
-# from djoser.urls import authtoken
 # from djoser.serializers import TokenCreateSerializer
 router = DefaultRouter()
 
@@ -19,7 +20,6 @@ djoser_urlpatterns = [
 ]
 
 urlpatterns = [
-    path('auth/token/login/', get_token, name='get_token'),
     path(
         'recipes/<int:recipe_id>/favorite/',
         FavoriteView.as_view(),

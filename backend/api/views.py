@@ -17,7 +17,6 @@ from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
 from .serializers import (
-    CustomTokenSerializer,
     CustomUserSerializer,
     CustomUserSubscriptionsSerializer,
     FavoriteSerializer,
@@ -30,16 +29,6 @@ from .serializers import (
 )
 
 User = get_user_model()
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def get_token(request):
-    serializer = CustomTokenSerializer(data=request.data)
-    if serializer.is_valid(raise_exception=True):
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
