@@ -17,7 +17,8 @@ def download_shopping_list(request):
         'title': 'HELLO'
     }
     # response = HttpResponse(pdf, content_type='application/pdf')
-    # response['Content-Disposition'] = 'attachment; filename="ShoppingCart.pdf"'
+    # response['Content-Disposition'] = 'attachment; filename="ShoppingCart
+    # .pdf"'
 
     return render(request, '../../recipes/templates/list.html', context)
-    return response
+    # return response

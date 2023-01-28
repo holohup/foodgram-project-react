@@ -1,13 +1,15 @@
-import os
-from io import BytesIO
+# import os
+# from io import BytesIO
 from typing import List, NamedTuple
 
-from django.conf import settings
+# from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.http import HttpResponse
-from django.template.loader import get_template
 
 from recipes.models import Recipe, RecipeIngredient
+
+# from django.http import HttpResponse
+# from django.template.loader import get_template
+
 
 User = get_user_model()
 
