@@ -3,8 +3,14 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -152,16 +158,16 @@ class ModelValidationTests(TestPresets):
         3. Only one user-author subscription can be made.
         4. Only unique recipe-ingridient entries can be made."""
 
-        self.assertEqual(Favorite.objects.count(), 0)
-        self.assertEqual(ShoppingCart.objects.count(), 0)
-        self.assertEqual(Subscription.objects.count(), 0)
+        fav = Favorite.objects.count()
+        cart = ShoppingCart.objects.count()
+        sub = Subscription.objects.count()
         self.assertEqual(RecipeIngredient.objects.count(), 1)
         Favorite.objects.create(recipe=self.recipe, user=self.user)
         ShoppingCart.objects.create(recipe=self.recipe, user=self.user)
         Subscription.objects.create(user=self.user, author=self.user2)
-        self.assertEqual(Favorite.objects.count(), 1)
-        self.assertEqual(ShoppingCart.objects.count(), 1)
-        self.assertEqual(Subscription.objects.count(), 1)
+        self.assertEqual(Favorite.objects.count(), fav + 1)
+        self.assertEqual(ShoppingCart.objects.count(), cart + 1)
+        self.assertEqual(Subscription.objects.count(), sub + 1)
         with self.assertRaises(IntegrityError):
             Favorite.objects.create(recipe=self.recipe, user=self.user)
             ShoppingCart.objects.create(recipe=self.recipe, user=self.user)

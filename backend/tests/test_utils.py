@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from api.utils import get_grocery_list
+from api.utils import get_grocery_list, plain_data_to_cart_items, ShoppingCartItem
 from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingCart
 
 User = get_user_model()
@@ -72,3 +72,12 @@ class TestShoppingList(TestCase):
         result = get_grocery_list(self.user2)
         self.assertIsInstance(result, dict)
         self.assertDictEqual(result, {})
+
+    def test_convert_to_human_readable_format(self):
+        """Does plain_data_to_cart_items work as intended?"""
+
+        result = plain_data_to_cart_items(get_grocery_list(self.user))
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 2)
+        self.assertIn(ShoppingCartItem(name='Pumpkin', measurement_unit='ea', amount=100), result)
+        self.assertIn(ShoppingCartItem(name='Chicken', measurement_unit='g.', amount=200), result)

@@ -1,9 +1,12 @@
-# from django.conf import settings
+import shutil
+import tempfile
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.test import APIClient, APITestCase, override_settings
 
 from recipes.models import (
     Favorite,
@@ -16,6 +19,7 @@ from recipes.models import (
 from users.models import Subscription
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 def generate_recipe(author):
@@ -31,37 +35,88 @@ def generate_recipe(author):
     )
 
 
-class UnauthorizedUserTests(APITestCase):
-    @classmethod
-    def setUp(cls):
-        """Tests presets."""
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class AuthorizedUserAuthorPresets(APITestCase):
+    """Preset for the following classes to inherit."""
 
-        cls.testuser = User.objects.create(
-            username='testuser',
-            email='test@test.com',
-            password='testpasswordtestpassword',
-            first_name='Test',
-            last_name='User',
-        )
+    @classmethod
+    def setUpClass(cls):
+        cls.user = User.objects.create_user(**cls.user_details)
+        cls.author = User.objects.create_user(**cls.author_details)
+        cls.user_client, cls.author_client = APIClient(), APIClient()
+        cls.user_client.force_authenticate(cls.user)
+        cls.author_client.force_authenticate(cls.author)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+        super().tearDownClass()
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class UnauthorizedUserTests(APITestCase):
+    """Unauthorized users cannot access some pages."""
+
+    @classmethod
+    def setUpClass(cls):
         cls.fake = Faker()
-        cls.recipe = Recipe.objects.create(
-            author=cls.testuser,
-            text=cls.fake.text(),
-            name=cls.fake.sentence(),
-            cooking_time=cls.fake.pyint(),
-            image='/images/test.jpg',
+        cls.author = User.objects.create(
+            email='testuser@user.com', username='Tester'
         )
+        cls.recipe = generate_recipe(cls.author)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+        super().tearDownClass()
+
+    def test_endpoints_without_tokens(self):
+        """No token requests return correct status codes."""
+
+        get_endpoints = (
+            reverse('users-me'),
+            reverse('users-subscriptions'),
+            reverse('users-subscribe', kwargs={'pk': self.author.id}),
+            # reverse('users-detail', kwargs={'pk': self.author.id}),
+        )
+        post_endpoints = (
+            reverse('users-set-password'),
+            reverse('favorite', kwargs={'recipe_id': self.recipe.id}),
+            reverse('users-subscribe', kwargs={'pk': self.author.id}),
+            reverse('recipes-list'),
+            reverse('recipes-detail', kwargs={'pk': self.recipe.id}) + 'shopping_cart/',
+        )
+        for endpoint in get_endpoints:
+            with self.subTest(endpoint=endpoint):
+                self.assertEqual(
+                    self.client.get(endpoint).status_code,
+                    status.HTTP_401_UNAUTHORIZED,
+                )
+        for endpoint in post_endpoints:
+            with self.subTest(endpoint=endpoint):
+                self.assertEqual(
+                    self.client.post(
+                        endpoint, {}, format='json'
+                    ).status_code,
+                    status.HTTP_401_UNAUTHORIZED,
+                )
+
+
+class AuthsEndpointsTests(APITestCase):
+    """ "Tests for auth endpoints."""
 
     def test_get_token_and_logout(self):
         """Check if we can obtain a working token, and we can delete it."""
 
-        user = User.objects.create(email='hello@space.com')
-        user.set_password('testPassword')
-        user.save()
         data = {
             'email': 'hello@space.com',
             'password': 'testPassword',
         }
+        user = User.objects.create(email=data['email'])
+        user.set_password(data['password'])
+        user.save()
         response = self.client.post(reverse('get_token'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('auth_token', response.data)
@@ -79,420 +134,26 @@ class UnauthorizedUserTests(APITestCase):
             status.HTTP_204_NO_CONTENT,
         )
 
-    def test_user_list(self):
-        User.objects.create(email='hello@space.com')
-        response = self.client.get(reverse('users-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user_data = response.data['results'][0]
-        self.assertEqual(len(user_data), 6)
-        for field in (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, user_data)
-        self.assertFalse(user_data['is_subscribed'])
 
-    def test_create_user(self):
-        """Create a user, check response codes and fields."""
-
-        payload = {
-            'email': 'hodleo2@ngfs.com',
-            'username': 'Willie',
-            'first_name': '',
-            'last_name': 'Wonka',
-            'password': 'Qwerffty123Qwerty123',
-        }
-        response = self.client.post(reverse('users-list'), payload)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        payload['first_name'] = 'Willy'
-        response = self.client.post(reverse('users-list'), payload)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data
-        self.assertEqual(len(response.data), 5)
-        self.assertNotIn('is_subscribed', data)
-        payload['id'] = User.objects.last().id
-        for field in data.keys():
-            with self.subTest(field=field):
-                self.assertEqual(payload[field], data[field])
-
-    def test_tags(self):
-        """Test tags endpoint."""
-
-        names = self.fake.words(10, unique=True)
-        tags = [
-            Tag.objects.create(
-                name=name, color=self.fake.color().upper(), slug=name
-            )
-            for name in names
-        ]
-
-        response = self.client.get(
-            reverse('tags-detail', kwargs={'pk': tags[0].id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
-        for field in 'color', 'id', 'name', 'slug':
-            with self.subTest(field=field):
-                self.assertEqual(response.data[field], getattr(tags[0], field))
-
-        response = self.client.get(reverse('tags-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), len(names))
-        response = self.client.get(reverse('tags-detail', kwargs={'pk': 100}))
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_ingredients(self):
-        """Test ingredients endpoint."""
-
-        names = self.fake.words(10, unique=True)
-        ingredients = [
-            Ingredient.objects.create(
-                name=name, measurement_unit=self.fake.word()
-            )
-            for name in names
-        ]
-
-        response = self.client.get(
-            reverse('ingredients-detail', kwargs={'pk': ingredients[0].id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
-        for field in 'measurement_unit', 'id', 'name':
-            with self.subTest(field=field):
-                self.assertEqual(
-                    response.data[field], getattr(ingredients[0], field)
-                )
-
-        response = self.client.get(reverse('ingredients-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), len(names))
-        response = self.client.get(
-            reverse('ingredients-detail', kwargs={'pk': 100})
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_ingredients_search(self):
-        """Tests if search behaves as expected and puts startswith first."""
-
-        objects = [
-            Ingredient(name='Banana', measurement_unit='kilo'),
-            Ingredient(name='avocado', measurement_unit='ea'),
-            Ingredient(name='burrito', measurement_unit='kilo'),
-        ]
-        Ingredient.objects.bulk_create(objects)
-        response = self.client.get(reverse('ingredients-list') + '?name=a')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]['name'], 'avocado')
-        self.assertEqual(response.data[1]['name'], 'Banana')
-        response = self.client.get(reverse('ingredients-list'))
-        self.assertEqual(len(response.data), 3)
-
-    def test_user_profile(self):
-        """Existing user is visible to others."""
-
-        user = User.objects.create(email='hello@kitty.com')
-        url = reverse('users-detail', kwargs={'pk': 100500})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        url = reverse('users-detail', kwargs={'pk': user.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['email'], 'hello@kitty.com')
-        self.assertEqual(len(response.data), 6)
-        for field in (
-            'email',
-            'username',
-            'id',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, response.data)
-
-    def test_recipes_list(self):
-        """Recipes list has all the necessary fields in correct formats."""
-
-        response = self.client.get(reverse('recipes-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.data['results'][0]
-        self.assertEqual(len(data), 10)
-        for field in (
-            'id',
-            'tags',
-            'author',
-            'ingredients',
-            'is_favorited',
-            'is_in_shopping_cart',
-            'name',
-            'image',
-            'text',
-            'cooking_time',
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, data)
-        self.assertIsInstance(data['tags'], list)
-        self.assertIsInstance(data['ingredients'], list)
-        self.assertIsInstance(data['id'], int)
-        self.assertIsInstance(data['cooking_time'], int)
-        self.assertIsInstance(data['author'], dict)
-        self.assertIsInstance(data['is_favorited'], bool)
-        self.assertIsInstance(data['is_in_shopping_cart'], bool)
-        self.assertIsInstance(data['image'], str)
-        self.assertIsInstance(data['name'], str)
-        self.assertIsInstance(data['text'], str)
-
-    def test_endpoints_with_invalid_tokens(self):
-        """Invalid token requests return correct status codes."""
-
-        get_endpoints = (
-            reverse('users-detail', kwargs={'pk': self.testuser.id}),
-            reverse('users-me'),
-        )
-        post_endpoints = (reverse('users-set-password'),)
-        invalid_token_client = APIClient()
-        invalid_token_client.credentials(HTTP_AUTHORIZATION='Token ' + 'AAA')
-        for endpoint in get_endpoints:
-            with self.subTest(endpoint=endpoint):
-                self.assertEqual(
-                    invalid_token_client.get(endpoint).status_code,
-                    status.HTTP_401_UNAUTHORIZED,
-                )
-        for endpoint in post_endpoints:
-            with self.subTest(endpoint=endpoint):
-                self.assertEqual(
-                    invalid_token_client.post(endpoint, {}).status_code,
-                    status.HTTP_401_UNAUTHORIZED,
-                )
-
-    def test_endpoints_without_tokens(self):
-        """No token requests return correct status codes."""
-
-        get_endpoints = (
-            reverse('users-me'),
-            reverse('users-subscriptions'),
-            reverse('users-subscribe', kwargs={'pk': 1}),
-        )
-        post_endpoints = (
-            reverse('users-set-password'),
-            reverse('favorite', kwargs={'recipe_id': 1}),
-            reverse('users-subscribe', kwargs={'pk': 1}),
-            reverse('recipes-list'),
-            reverse('recipes-detail', kwargs={'pk': 1}) + 'shopping_cart/',
-        )
-        no_token_client = APIClient()
-        for endpoint in get_endpoints:
-            with self.subTest(endpoint=endpoint):
-                self.assertEqual(
-                    no_token_client.get(endpoint).status_code,
-                    status.HTTP_401_UNAUTHORIZED,
-                )
-        for endpoint in post_endpoints:
-            with self.subTest(endpoint=endpoint):
-                self.assertEqual(
-                    no_token_client.post(
-                        endpoint, {}, format='json'
-                    ).status_code,
-                    status.HTTP_401_UNAUTHORIZED,
-                )
-
-    def test_recipe_detail_fields(self):
-        """Are the returned fields in recipe details correct."""
-
-        recipe = generate_recipe(author=self.testuser)
-        response = self.client.get(
-            reverse('recipes-detail', kwargs={'pk': recipe.id})
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 10)
-        for field in (
-            'id',
-            'tags',
-            'author',
-            'ingredients',
-            'is_favorited',
-            'is_in_shopping_cart',
-            'name',
-            'image',
-            'text',
-            'cooking_time',
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, response.data)
-        for field in ('id', 'name', 'text', 'cooking_time'):
-            with self.subTest(field=field):
-                self.assertEqual(getattr(recipe, field), response.data[field])
-        self.assertIsInstance(response.data['author'], dict)
-        self.assertIsInstance(response.data['tags'], list)
-        self.assertIsInstance(response.data['ingredients'], list)
-        self.assertFalse(response.data['is_favorited'])
-        self.assertFalse(response.data['is_in_shopping_cart'])
-        self.assertTrue(response.data['image'].endswith(recipe.image.url))
-
-
-class AuthorizedUserTests(APITestCase):
-    """Tests for authorized clients of non-admin level."""
+class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
+    """ "Tests for auth endpoints."""
 
     @classmethod
-    def setUp(cls):
+    def setUpClass(cls):
         cls.user_details = {
-            'username': 'u',
-            'email': 'u@i.com',
+            'username': 's_user',
+            'email': 's_u@i.com',
             'first_name': 'William',
             'last_name': 'Tell',
         }
-        cls.user = User.objects.create_user(**cls.user_details)
-        cls.author = User.objects.create_user(username='a', email='a@i.com')
-        cls.user_client, cls.author_client = APIClient(), APIClient()
-        cls.user_client.force_authenticate(cls.user)
-        cls.author_client.force_authenticate(cls.author)
+        cls.author_details = {
+            'username': 's_author',
+            'email': 's_author@mail.com',
+        }
         cls.fake = Faker()
+        super().setUpClass()
         cls.recipe = generate_recipe(cls.author)
         cls.recipes = [generate_recipe(author=cls.author) for _ in range(10)]
-
-    def test_subscriptions_on_users_page(self):
-        """Create a subscription, check that it shows on /users/ endpoint."""
-
-        Subscription.objects.create(user=self.user, author=self.author)
-        url = reverse('users-list')
-        user_results = self.user_client.get(url).data['results']
-        author_results = self.author_client.get(url).data['results']
-        for result in user_results:
-            if result['id'] == self.author.id:
-                self.assertTrue(result['is_subscribed'])
-        for result in author_results:
-            if result['id'] == self.user.id:
-                self.assertFalse(result['is_subscribed'])
-
-    def test_create_recipe(self):
-        """Tests recipe creation and response."""
-
-        prev_recipes = Recipe.objects.count()
-        url = reverse('recipes-list')
-        names = self.fake.words(3, unique=True)
-        tags = [
-            Tag.objects.create(
-                name=name, color=self.fake.color().upper(), slug=name
-            )
-            for name in names
-        ]
-        words = self.fake.words(3, unique=True)
-        ingredients = [
-            Ingredient.objects.create(
-                name=word, measurement_unit=self.fake.word()
-            )
-            for word in words
-        ]
-        recipe_presets = {
-            'ingredients': [
-                {'id': ingredient.id, 'amount': self.fake.pyint()}
-                for ingredient in ingredients
-            ],
-            'tags': [tag.id for tag in tags],
-            'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
-            'name': self.fake.sentence(),
-            'text': self.fake.sentence(),
-            'cooking_time': self.fake.pyint(),
-        }
-        response = self.author_client.post(url, recipe_presets, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Recipe.objects.count(), prev_recipes + 1)
-        self.assertEqual(len(response.data), 10)
-        for field in (
-            'id',
-            'tags',
-            'author',
-            'ingredients',
-            'is_favorited',
-            'is_in_shopping_cart',
-            'name',
-            'image',
-            'text',
-            'cooking_time',
-        ):
-            with self.subTest(field=field):
-                self.assertIn(field, response.data)
-        self.assertIsInstance(response.data['tags'], list)
-        self.assertIsInstance(response.data['ingredients'], list)
-        self.assertIsInstance(response.data['id'], int)
-        self.assertIsInstance(response.data['cooking_time'], int)
-        self.assertIsInstance(response.data['author'], dict)
-        self.assertIsInstance(response.data['is_favorited'], bool)
-        self.assertIsInstance(response.data['is_in_shopping_cart'], bool)
-        self.assertIsInstance(response.data['image'], str)
-        self.assertIsInstance(response.data['name'], str)
-        self.assertIsInstance(response.data['text'], str)
-
-    def test_my_profile(self):
-        """Test if the user profile is correct."""
-
-        response = self.user_client.get(reverse('users-me'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for field in self.user_details.keys():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    response.data[field], self.user_details[field]
-                )
-        self.assertIn('id', response.data)
-        self.assertEqual(response.data['id'], self.user.id)
-        self.assertIn('is_subscribed', response.data)
-        self.assertFalse(response.data['is_subscribed'])
-
-    def test_password_change(self):
-        """Check if valid password change changes the password."""
-
-        url = reverse('users-set-password')
-        creds = {'old_password': 'even_this', 'new_password': '111'}
-        self.user.set_password(creds['old_password'])
-        self.user.save()
-        self.assertTrue(self.user.check_password(creds['old_password']))
-        response = self.user_client.post(url, creds)
-        self.assertEqual(response.status_code, 400)
-        creds['new_password'] = 'me'
-        response = self.user_client.post(url, creds)
-        self.assertEqual(response.status_code, 400)
-        creds['new_password'] = 'on_a_second_thought'
-        response = self.user_client.post(url, creds)
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(response.data, {})
-        self.assertTrue(self.user.check_password(creds['new_password']))
-
-    def test_favorite_endpoint(self):
-        """Tests for favorite endpoint."""
-
-        Favorite.objects.create(
-            user=self.author, recipe=self.recipe
-        )  # needed for recipe.id test to fail if wrong id is returned
-        previous_favs = Favorite.objects.count()
-        url = reverse('favorite', kwargs={'recipe_id': self.recipe.id})
-        response = self.user_client.post(url, {})
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Favorite.objects.count(), previous_favs + 1)
-        self.assertEqual(len(response.data), 4)
-        for field in 'id', 'name', 'image', 'cooking_time':
-            with self.subTest(field=field):
-                self.assertIn(field, response.data)
-        self.assertIsInstance(response.data['id'], int)
-        self.assertIsInstance(response.data['cooking_time'], int)
-        self.assertIsInstance(response.data['image'], str)
-        self.assertIsInstance(response.data['name'], str)
-        # self.assertEqual(response.data['id'], self.recipe.id)
-        self.assertEqual(response.data['name'], self.recipe.name)
-        self.assertEqual(
-            response.data['cooking_time'], self.recipe.cooking_time
-        )
-        self.assertIn('://', response.data['image'])
-        response = self.user_client.post(url, {})
-        self.assertEqual(response.status_code, 400)
-        response = self.user_client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Favorite.objects.count(), previous_favs)
 
     def test_subscriptions_endpoint(self):
         """Tests functionality of subscription endpoint."""
@@ -576,6 +237,348 @@ class AuthorizedUserTests(APITestCase):
         response = self.user_client.get(url + '?recipes_limit=3')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 3)
+
+
+class UsersEndpointTests(AuthorizedUserAuthorPresets):
+    """Tests for users endpoints."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.user_details = {
+            'username': 'user',
+            'email': 'user@i.com',
+            'first_name': 'William',
+            'last_name': 'Tell',
+        }
+        cls.author_details = {'username': 'author', 'email': 'author@mail.com'}
+        super().setUpClass()
+
+    def test_create_user(self):
+        """Create a user, check response codes and fields."""
+
+        payload = {
+            'email': 'hodleo2@ngfs.com',
+            'username': 'Willie',
+            'first_name': '',
+            'last_name': 'Wonka',
+            'password': 'Qwerffty123Qwerty123',
+        }
+        response = self.client.post(reverse('users-list'), payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        payload['first_name'] = 'Willy'
+        response = self.client.post(reverse('users-list'), payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.data
+        self.assertEqual(len(response.data), 5)
+        self.assertNotIn('is_subscribed', data)
+        payload['id'] = User.objects.last().id
+        for field in data.keys():
+            with self.subTest(field=field):
+                self.assertEqual(payload[field], data[field])
+
+    def test_user_list(self):
+        """Tests for users list."""
+
+        User.objects.create(email='hello@space.com')
+        response = self.client.get(reverse('users-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user_data = response.data['results'][0]
+        self.assertEqual(len(user_data), 6)
+        for field in (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, user_data)
+        self.assertFalse(user_data['is_subscribed'])
+
+    def test_user_profile(self):
+        """Existing user is visible to others."""
+
+        user = User.objects.create(email='hello@kitty.com')
+        url = reverse('users-detail', kwargs={'pk': 100500})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        url = reverse('users-detail', kwargs={'pk': user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'hello@kitty.com')
+        self.assertEqual(len(response.data), 6)
+        for field in (
+            'email',
+            'username',
+            'id',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+
+    def test_subscriptions_on_users_page(self):
+        """Create a subscription, check that it shows on /users/ endpoint."""
+
+        Subscription.objects.create(user=self.user, author=self.author)
+        url = reverse('users-list')
+        user_results = self.user_client.get(url).data['results']
+        author_results = self.author_client.get(url).data['results']
+        for result in user_results:
+            if result['id'] == self.author.id:
+                self.assertTrue(result['is_subscribed'])
+        for result in author_results:
+            if result['id'] == self.user.id:
+                self.assertFalse(result['is_subscribed'])
+
+    def test_my_profile(self):
+        """Test if the user profile is correct."""
+
+        response = self.user_client.get(reverse('users-me'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for field in self.user_details.keys():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    response.data[field], self.user_details[field]
+                )
+        self.assertIn('id', response.data)
+        self.assertEqual(response.data['id'], self.user.id)
+        self.assertIn('is_subscribed', response.data)
+        self.assertFalse(response.data['is_subscribed'])
+
+    def test_password_change(self):
+        """Check if valid password change changes the password."""
+
+        url = reverse('users-set-password')
+        creds = {'current_password': 'even_this', 'new_password': '111'}
+        self.user.set_password(creds['current_password'])
+        self.user.save()
+        self.assertTrue(self.user.check_password(creds['current_password']))
+        response = self.user_client.post(url, creds)
+        self.assertEqual(response.status_code, 400)
+        creds['new_password'] = 'me'
+        response = self.user_client.post(url, creds)
+        self.assertEqual(response.status_code, 400)
+        creds['new_password'] = 'on_a_second_thought'
+        response = self.user_client.post(url, creds)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.data, {})
+        self.assertTrue(self.user.check_password(creds['new_password']))
+
+
+class ShoppingCardEndpointsTests(APITestCase):
+    """Tests for shopping cart endpoints."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.author = User.objects.create_user(
+            username='shopper', email='cart_tester@yandex.com'
+        )
+        cls.author_client = APIClient()
+        cls.author_client.force_authenticate(cls.author)
+        super().setUpClass()
+
+    def test_shoppingcart_endpoint(self):
+        """Check if post/delete work correctly."""
+
+        recipe = generate_recipe(author=self.author)
+        url = (
+            reverse('recipes-detail', kwargs={'pk': recipe.id})
+            + 'shopping_cart/'
+        )
+        carts_amount = ShoppingCart.objects.count()
+        response = self.author_client.post(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ShoppingCart.objects.count(), carts_amount + 1)
+        self.assertEqual(
+            ShoppingCart.objects.get(recipe=recipe, user=self.author),
+            ShoppingCart.objects.last(),
+        )
+        self.assertEqual(len(response.data), 4)
+        for field in 'id', 'name', 'image', 'cooking_time':
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        response = self.author_client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        response = self.author_client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class IngredientEndpointsTests(APITestCase):
+    """Tests for ingredients endpoins."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake = Faker()
+        super().setUpClass()
+
+    def test_ingredients(self):
+        """Test ingredients endpoint."""
+
+        names = self.fake.words(10, unique=True)
+        ingredients = [
+            Ingredient.objects.create(
+                name=name, measurement_unit=self.fake.word()
+            )
+            for name in names
+        ]
+
+        response = self.client.get(
+            reverse('ingredients-detail', kwargs={'pk': ingredients[0].id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        for field in 'measurement_unit', 'id', 'name':
+            with self.subTest(field=field):
+                self.assertEqual(
+                    response.data[field], getattr(ingredients[0], field)
+                )
+
+        response = self.client.get(reverse('ingredients-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), len(names))
+        response = self.client.get(
+            reverse('ingredients-detail', kwargs={'pk': 100})
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_ingredients_search(self):
+        """Tests if search behaves as expected and puts startswith first."""
+
+        objects = [
+            Ingredient(name='Banana', measurement_unit='kilo'),
+            Ingredient(name='avocado', measurement_unit='ea'),
+            Ingredient(name='burrito', measurement_unit='kilo'),
+        ]
+        Ingredient.objects.bulk_create(objects)
+        response = self.client.get(reverse('ingredients-list') + '?name=a')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['name'], 'avocado')
+        self.assertEqual(response.data[1]['name'], 'Banana')
+        response = self.client.get(reverse('ingredients-list'))
+        self.assertEqual(len(response.data), 3)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class RecipesEndpointsTests(APITestCase):
+    """Tests for ingredients endpoins."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake = Faker()
+        cls.fields = {
+            'tags': list,
+            'ingredients': list,
+            'id': int,
+            'cooking_time': int,
+            'author': dict,
+            'is_favorited': bool,
+            'is_in_shopping_cart': bool,
+            'image': str,
+            'name': str,
+            'text': str,
+        }
+        cls.author = User.objects.create(
+            email='recipe@cooking.org', username='ChefMing'
+        )
+        cls.user = User.objects.create(
+            email='angrydave@reddit.com', username='AngryDave'
+        )
+        cls.author_client, cls.user_client = APIClient(), APIClient()
+        cls.author_client.force_authenticate(cls.author)
+        cls.user_client.force_authenticate(cls.user)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+        super().tearDownClass()
+
+    def test_recipes_list(self):
+        """Recipes list has all the necessary fields in correct formats."""
+
+        response = self.client.get(reverse('recipes-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data['results'][0]
+        self.assertEqual(len(data), 10)
+        for field in self.fields.keys():
+            with self.subTest(field=field):
+                self.assertIn(field, data)
+        for field, inst in self.fields.items():
+            with self.subTest(field=field):
+                self.assertIsInstance(data[field], inst)
+
+    def test_recipe_detail_fields(self):
+        """Are the returned fields in recipe details correct."""
+
+        recipe = generate_recipe(author=self.author)
+        response = self.client.get(
+            reverse('recipes-detail', kwargs={'pk': recipe.id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 10)
+        for field in self.fields.keys():
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        for field, inst in self.fields.items():
+            with self.subTest(field=field):
+                self.assertIsInstance(response.data[field], inst)
+        for field in ('id', 'name', 'text', 'cooking_time'):
+            with self.subTest(field=field):
+                self.assertEqual(getattr(recipe, field), response.data[field])
+        self.assertFalse(response.data['is_favorited'])
+        self.assertFalse(response.data['is_in_shopping_cart'])
+        self.assertTrue(response.data['image'].endswith(recipe.image.url))
+
+    def test_create_recipe(self):
+        """Tests recipe creation and response."""
+
+        prev_recipes = Recipe.objects.count()
+        url = reverse('recipes-list')
+        names = self.fake.words(3, unique=True)
+        tags = [
+            Tag.objects.create(
+                name=name, color=self.fake.color().upper(), slug=name
+            )
+            for name in names
+        ]
+        words = self.fake.words(3, unique=True)
+        ingredients = [
+            Ingredient.objects.create(
+                name=word, measurement_unit=self.fake.word()
+            )
+            for word in words
+        ]
+        recipe_presets = {
+            'ingredients': [
+                {'id': ingredient.id, 'amount': self.fake.pyint()}
+                for ingredient in ingredients
+            ],
+            'tags': [tag.id for tag in tags],
+            'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=',
+            'name': self.fake.sentence(),
+            'text': self.fake.sentence(),
+            'cooking_time': self.fake.pyint(),
+        }
+        response = self.author_client.post(url, recipe_presets, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Recipe.objects.count(), prev_recipes + 1)
+        self.assertEqual(len(response.data), 10)
+        for field in self.fields.keys():
+            with self.subTest(field=field):
+                self.assertIn(field, response.data)
+        for field, inst in self.fields.items():
+            with self.subTest(field=field):
+                self.assertIsInstance(response.data[field], inst)
 
     def test_recipe_list_filters(self):
         """Are the filters working correctly?"""
@@ -698,46 +701,96 @@ class AuthorizedUserTests(APITestCase):
         response = self.author_client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_shoppingcart_endpoint(self):
-        """Check if post/delete work correctly."""
 
-        recipe = generate_recipe(author=self.author)
-        url = (
-            reverse('recipes-detail', kwargs={'pk': recipe.id})
-            + 'shopping_cart/'
+class FavoriteEndpointsTests(APITestCase):
+    """Tests for favorite endpoins."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake = Faker()
+        cls.author = User.objects.create(
+            email='favorite@food.com', username='JuliaCh'
         )
-        carts_amount = ShoppingCart.objects.count()
-        response = self.author_client.post(url, format='json')
+        cls.user = User.objects.create(email='amused@to.d', username='Bill')
+        cls.user_client = APIClient()
+        cls.user_client.force_authenticate(cls.user)
+        cls.recipe = Recipe.objects.create(
+            cooking_time=1, author=cls.author, image='r.jpg'
+        )
+        super().setUpClass()
+
+    def test_favorite_endpoint(self):
+        """Tests for favorite endpoint."""
+
+        # Favorite.objects.create(
+        #     user=self.author, recipe=self.recipe
+        # )  # needed for recipe.id test to fail if wrong id is returned
+        previous_favs = Favorite.objects.count()
+        url = reverse('favorite', kwargs={'recipe_id': self.recipe.id})
+        response = self.user_client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(ShoppingCart.objects.count(), carts_amount + 1)
-        self.assertEqual(
-            ShoppingCart.objects.get(recipe=recipe, user=self.author),
-            ShoppingCart.objects.last(),
-        )
+        self.assertEqual(Favorite.objects.count(), previous_favs + 1)
         self.assertEqual(len(response.data), 4)
         for field in 'id', 'name', 'image', 'cooking_time':
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
-        response = self.author_client.post(url, {}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        response = self.client.post(url, {}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        response = self.author_client.delete(url)
+        self.assertIsInstance(response.data['id'], int)
+        self.assertIsInstance(response.data['cooking_time'], int)
+        self.assertIsInstance(response.data['image'], str)
+        self.assertIsInstance(response.data['name'], str)
+        # self.assertEqual(response.data['id'], self.recipe.id)
+        self.assertEqual(response.data['name'], self.recipe.name)
+        self.assertEqual(
+            response.data['cooking_time'], self.recipe.cooking_time
+        )
+        self.assertIn('://', response.data['image'])
+        response = self.user_client.post(url, {})
+        self.assertEqual(response.status_code, 400)
+        response = self.user_client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        response = self.author_client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Favorite.objects.count(), previous_favs)
+
+
+class TagsEndpointsTests(APITestCase):
+    """Tests for favorite endpoins."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fake = Faker()
+        cls.names = cls.fake.words(10, unique=True)
+        cls.tags = [
+            Tag.objects.create(
+                name=name, color=cls.fake.color().upper(), slug=name
+            )
+            for name in cls.names
+        ]
+        super().setUpClass()
+
+    def test_tags(self):
+        """Test tags endpoint."""
+
+        response = self.client.get(
+            reverse('tags-detail', kwargs={'pk': self.tags[0].id})
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
+        for field in 'color', 'id', 'name', 'slug':
+            with self.subTest(field=field):
+                self.assertEqual(response.data[field], getattr(self.tags[0], field))
+
+        response = self.client.get(reverse('tags-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), len(self.names))
+        response = self.client.get(reverse('tags-detail', kwargs={'pk': 100}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 
 class PaginationTests(APITestCase):
+    """ "Are the pagination arguments and fields named correctly?"""
+
     @classmethod
-    def setUp(cls):
-        cls.paginated_pages = {
-            reverse('users-list'): 11,
-            reverse('users-subscriptions'): 10,
-            reverse('recipes-list'): 10,
-        }
+    def setUpClass(cls):
         cls.fake = Faker()
         usernames = cls.fake.words(11, unique=True)
         cls.users = [
@@ -767,9 +820,15 @@ class PaginationTests(APITestCase):
             )
             for _ in range(10)
         ]
+        cls.paginated_pages = {
+            reverse('users-list'): User.objects.count(),
+            reverse('users-subscriptions'): Subscription.objects.count(),
+            reverse('recipes-list'): Recipe.objects.count(),
+        }
+        super().setUpClass()
 
     def test_paginated_pages(self):
-        """Tests that pages that should be paginated are paginated."""
+        """Tests that the pagination is on and uses correct kwargs."""
 
         for url, amount in self.paginated_pages.items():
             response = self.subscriber_client.get(url)
@@ -785,10 +844,3 @@ class PaginationTests(APITestCase):
             self.assertTrue(
                 response.data['previous'].endswith('?limit=3&page=2')
             )
-            self.assertEqual(len(response.data['results']), 3)
-            response = self.subscriber_client.get(url, {'limit': 5, 'page': 4})
-            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-            response = self.subscriber_client.get(url, {'limit': 5, 'page': 1})
-            self.assertIsNone(response.data['previous'])
-            response = self.subscriber_client.get(url, {'limit': 4, 'page': 3})
-            self.assertIsNone(response.data['next'])

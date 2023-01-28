@@ -1,8 +1,20 @@
 from django.contrib.auth import get_user_model
+from io import BytesIO
+from django.http import HttpResponse
+from django.template.loader import get_template
+from typing import NamedTuple, List
+from django.conf import settings
 
 from recipes.models import Recipe, RecipeIngredient
+import os
 
 User = get_user_model()
+
+
+class ShoppingCartItem(NamedTuple):
+    name: str
+    measurement_unit: str
+    amount: int
 
 
 def get_grocery_list(user: User):
@@ -14,4 +26,17 @@ def get_grocery_list(user: User):
         if key not in result:
             result[key] = 0
         result[key] += item.amount
+    return result
+
+
+def plain_data_to_cart_items(data: dict) -> List[ShoppingCartItem]:
+    result = []
+    for ingredient, amount in data.items():
+        result.append(
+            ShoppingCartItem(
+                name=ingredient[0],
+                measurement_unit=ingredient[1],
+                amount=amount,
+            )
+        )
     return result

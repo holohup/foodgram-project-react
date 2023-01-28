@@ -6,11 +6,18 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from recipes.views import download_shopping_list
+
 # from rest_framework.authtoken.models import TokenProxy
 
 # admin.site.unregister(TokenProxy)
 
 urlpatterns = [
+    path(
+        'api/recipes/download_shopping_cart/',
+        download_shopping_list,
+        name='shopping_cart_download',
+    ),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
 ]

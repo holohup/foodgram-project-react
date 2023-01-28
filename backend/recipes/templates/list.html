@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet"
+        href="/Users/holo/Dev/foodgram-project-react/backend/static/render_pdf/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+    <style>
+      @font-face { font-family: Arial; src: url('/Users/holo/Dev/foodgram-project-react/backend/static/render_pdf/DejaVuSans.ttf'); }
+    </style>
+    <title>Grocery list</title>
+  </head>
+  <body>
+    <div class="container">
+      <center>
+        <h1>Grocery List for {{ author.get_full_name }}</h1>
+      </center>
+      <div>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Ingredient</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Measurement Unit</th>
+              <th scope="col">Bought</th>
+            </tr>
+            <tbody>
+              {% for item in data %}
+                <tr>
+                  <th scope="row">
+                    <b>{{ item.name }}</b>
+                  </th>
+                  <td>{{ item.amount }}</td>
+                  <td>{{ item.measurement_unit }}</td>
+                  <td>[&nbsp;&nbsp;]</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </body>
+  </html>

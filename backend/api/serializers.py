@@ -67,14 +67,14 @@ class SetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(
         max_length=150, write_only=True, required=True
     )
-    old_password = serializers.CharField(
+    current_password = serializers.CharField(
         max_length=150, write_only=True, required=True
     )
 
-    def validate_old_password(self, value):
+    def validate_current_password(self, value):
         if self.context['request'].user.check_password(value):
             return value
-        raise ValidationError('Invalid old password.')
+        raise ValidationError('Invalid current password.')
 
     def validate_new_password(self, value):
         if not validate_password(value):
@@ -82,7 +82,7 @@ class SetPasswordSerializer(serializers.Serializer):
         raise ValidationError('Could not validate password')
 
     def validate(self, data):
-        if data['new_password'] == data['old_password']:
+        if data['new_password'] == data['current_password']:
             raise ValidationError('Cannot change password to the same value.')
         return data
 
@@ -128,7 +128,6 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
 
 class FavoriteSerializer(serializers.ModelSerializer):
 
-    # recipe = RecipeMiniSerializer(many=False, read_only=True)
     name = serializers.CharField(source='recipe.name', read_only=True)
     cooking_time = serializers.IntegerField(
         source='recipe.cooking_time', read_only=True
