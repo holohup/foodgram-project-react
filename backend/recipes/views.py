@@ -1,8 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.shortcuts import render
 
 from api.utils import get_grocery_list, plain_data_to_cart_items
-from django.shortcuts import render
 
 
 @login_required

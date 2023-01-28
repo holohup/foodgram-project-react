@@ -8,14 +8,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -77,6 +71,38 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
         request = self.context['request']
         return request.build_absolute_uri(favorite.image.url)
 
+
+# class FavoriteSerializer(serializers.ModelSerializer):
+
+#     name = serializers.CharField(source='recipe.name', read_only=True)
+#     cooking_time = serializers.IntegerField(
+#         source='recipe.cooking_time', read_only=True
+#     )
+#     image = serializers.SerializerMethodField()
+#     user_id = serializers.CharField(write_only=True)
+#     recipe_id = serializers.CharField(write_only=True)
+
+#     def get_image(self, favorite):
+#         request = self.context['request']
+#         return request.build_absolute_uri(favorite.recipe.image.url)
+
+#     class Meta:
+#         model = Favorite
+#         fields = (
+#             'id',
+#             'name',
+#             'image',
+#             'cooking_time',
+#             'user_id',
+#             'recipe_id',
+#         )
+
+#     def validate(self, data):
+#         recipe = Recipe.objects.get(id=data['recipe_id'])
+#         user = User.objects.get(id=data['user_id'])
+#         if not Favorite.objects.filter(user=user, recipe=recipe):
+#             return data
+#         raise ValidationError('This favorite already exists.')
 
 class FavoriteSerializer(serializers.ModelSerializer):
 

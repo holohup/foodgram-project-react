@@ -8,14 +8,8 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase, override_settings
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -76,15 +70,15 @@ class UnauthorizedUserTests(APITestCase):
         """No token requests return correct status codes."""
 
         get_endpoints = (
-            reverse('user-me'),
-            reverse('user-subscriptions'),
-            reverse('user-subscribe', kwargs={'id': self.author.id}),
-            # reverse('user-detail', kwargs={'pk': self.author.id}),
+            reverse('users-me'),
+            reverse('users-subscriptions'),
+            reverse('users-subscribe', kwargs={'id': self.author.id}),
+            # reverse('users-detail', kwargs={'pk': self.author.id}),
         )
         post_endpoints = (
-            reverse('user-set-password'),
-            reverse('favorite', kwargs={'recipe_id': self.recipe.id}),
-            reverse('user-subscribe', kwargs={'id': self.author.id}),
+            reverse('users-set-password'),
+            reverse('recipes-favorite', kwargs={'pk': self.recipe.id}),
+            reverse('users-subscribe', kwargs={'id': self.author.id}),
             reverse('recipes-list'),
             reverse('recipes-detail', kwargs={'pk': self.recipe.id}) + 'shopping_cart/',
         )
@@ -160,9 +154,9 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
 
         prev_subs = Subscription.objects.count()
         subscribe_url = reverse(
-            'user-subscribe', kwargs={'id': self.author.id}
+            'users-subscribe', kwargs={'id': self.author.id}
         )
-        subscriptions_url = reverse('user-subscriptions')
+        subscriptions_url = reverse('users-subscriptions')
         response = self.user_client.get(subscriptions_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         author_ids = []
@@ -196,7 +190,7 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
         """Tests that subscriptions fields are correct."""
 
         subscribe_url = reverse(
-            'user-subscribe', kwargs={'id': self.author.id}
+            'users-subscribe', kwargs={'id': self.author.id}
         )
         response = self.user_client.post(subscribe_url, {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -221,16 +215,16 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
     def test_nested_recipes_limit_in_subscriptions(self):
         """Tests if recipes_limit argument works as intended."""
 
-        url = reverse('user-subscribe', kwargs={'id': self.author.id})
+        url = reverse('users-subscribe', kwargs={'id': self.author.id})
         response = self.user_client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(len(response.data['recipes']), 5)
         Subscription.objects.last().delete()
-        url = reverse('user-subscribe', kwargs={'id': self.author.id})
+        url = reverse('users-subscribe', kwargs={'id': self.author.id})
         response = self.user_client.post(url + '?recipes_limit=3', {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(len(response.data['recipes']), 3)
-        url = reverse('user-subscriptions')
+        url = reverse('users-subscriptions')
         response = self.user_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 5)
@@ -263,10 +257,10 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
             'last_name': 'Wonka',
             'password': 'Qwerffty123Qwerty123',
         }
-        response = self.client.post(reverse('user-list'), payload)
+        response = self.client.post(reverse('users-list'), payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         payload['first_name'] = 'Willy'
-        response = self.client.post(reverse('user-list'), payload)
+        response = self.client.post(reverse('users-list'), payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.data
         self.assertEqual(len(response.data), 5)
@@ -280,7 +274,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
         """Tests for users list."""
 
         User.objects.create(email='hello@space.com')
-        response = self.client.get(reverse('user-list'))
+        response = self.client.get(reverse('users-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_data = response.data['results'][0]
         self.assertEqual(len(user_data), 6)
@@ -300,10 +294,10 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
         """Existing user is visible to others."""
 
         user = User.objects.create(email='hello@kitty.com')
-        url = reverse('user-detail', kwargs={'id': 100500})
+        url = reverse('users-detail', kwargs={'id': 100500})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        url = reverse('user-detail', kwargs={'id': user.id})
+        url = reverse('users-detail', kwargs={'id': user.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'hello@kitty.com')
@@ -323,7 +317,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
         """Create a subscription, check that it shows on /users/ endpoint."""
 
         Subscription.objects.create(user=self.user, author=self.author)
-        url = reverse('user-list')
+        url = reverse('users-list')
         user_results = self.user_client.get(url).data['results']
         author_results = self.author_client.get(url).data['results']
         for result in user_results:
@@ -336,7 +330,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
     def test_my_profile(self):
         """Test if the user profile is correct."""
 
-        response = self.user_client.get(reverse('user-me'))
+        response = self.user_client.get(reverse('users-me'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for field in self.user_details.keys():
             with self.subTest(field=field):
@@ -351,7 +345,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
     def test_password_change(self):
         """Check if valid password change changes the password."""
 
-        url = reverse('user-set-password')
+        url = reverse('users-set-password')
         creds = {'current_password': 'even_this', 'new_password': '111'}
         self.user.set_password(creds['current_password'])
         self.user.save()
@@ -726,7 +720,7 @@ class FavoriteEndpointsTests(APITestCase):
         #     user=self.author, recipe=self.recipe
         # )  # needed for recipe.id test to fail if wrong id is returned
         previous_favs = Favorite.objects.count()
-        url = reverse('favorite', kwargs={'recipe_id': self.recipe.id})
+        url = reverse('recipes-favorite', kwargs={'pk': self.recipe.id})
         response = self.user_client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Favorite.objects.count(), previous_favs + 1)
@@ -821,8 +815,8 @@ class PaginationTests(APITestCase):
             for _ in range(10)
         ]
         cls.paginated_pages = {
-            reverse('user-list'): User.objects.count(),
-            reverse('user-subscriptions'): Subscription.objects.count(),
+            reverse('users-list'): User.objects.count(),
+            reverse('users-subscriptions'): Subscription.objects.count(),
             reverse('recipes-list'): Recipe.objects.count(),
         }
         super().setUpClass()
