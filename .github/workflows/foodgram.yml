@@ -78,8 +78,8 @@ jobs:
           script: |
             docker-compose --project-directory foodgram stop web
             docker pull $REPO_TAG
-            echo '${{ secrets.DB_CREDENTIALS }}' > foodgram/.env
-            docker-compose --project-directory foodgram up -d
+            echo '${{ secrets.DB_CREDENTIALS }}' > foodgram/infra/.env
+            docker-compose --project-directory foodgram/infra/ up -d
 
   smoke_tests:
     runs-on: ubuntu-latest
