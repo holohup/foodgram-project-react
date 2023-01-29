@@ -61,7 +61,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeMiniSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -73,9 +73,9 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'name', 'cooking_time')
 
-    def get_image(self, favorite):
-        request = self.context['request']
-        return request.build_absolute_uri(favorite.image.url)
+    # def get_image(self, favorite):
+    #     request = self.context['request']
+    #     return request.build_absolute_uri(favorite.image.url)
 
 
 # class FavoriteSerializer(serializers.ModelSerializer):
@@ -116,14 +116,15 @@ class FavoriteSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         source='recipe.cooking_time', read_only=True
     )
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
+    image = Base64ImageField(source='recipe.image', required=False)
     user_id = serializers.CharField(write_only=True)
     recipe_id = serializers.CharField(write_only=True)
     id = serializers.IntegerField(source='recipe.id', read_only=True)
 
-    def get_image(self, favorite):
-        request = self.context['request']
-        return request.build_absolute_uri(favorite.recipe.image.url)
+    # def get_image(self, favorite):
+    #     request = self.context['request']
+    #     return request.build_absolute_uri(favorite.recipe.image.url)
 
     class Meta:
         model = Favorite
