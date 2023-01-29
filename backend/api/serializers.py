@@ -61,7 +61,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeMiniSerializer(serializers.ModelSerializer):
-    # image = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -73,42 +72,6 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'name', 'cooking_time')
 
-    # def get_image(self, favorite):
-    #     request = self.context['request']
-    #     return request.build_absolute_uri(favorite.image.url)
-
-
-# class FavoriteSerializer(serializers.ModelSerializer):
-
-#     name = serializers.CharField(source='recipe.name', read_only=True)
-#     cooking_time = serializers.IntegerField(
-#         source='recipe.cooking_time', read_only=True
-#     )
-#     image = serializers.SerializerMethodField()
-#     user_id = serializers.CharField(write_only=True)
-#     recipe_id = serializers.CharField(write_only=True)
-
-#     def get_image(self, favorite):
-#         request = self.context['request']
-#         return request.build_absolute_uri(favorite.recipe.image.url)
-
-#     class Meta:
-#         model = Favorite
-#         fields = (
-#             'id',
-#             'name',
-#             'image',
-#             'cooking_time',
-#             'user_id',
-#             'recipe_id',
-#         )
-
-#     def validate(self, data):
-#         recipe = Recipe.objects.get(id=data['recipe_id'])
-#         user = User.objects.get(id=data['user_id'])
-#         if not Favorite.objects.filter(user=user, recipe=recipe):
-#             return data
-#         raise ValidationError('This favorite already exists.')
 
 class FavoriteSerializer(serializers.ModelSerializer):
 
@@ -116,15 +79,10 @@ class FavoriteSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         source='recipe.cooking_time', read_only=True
     )
-    # image = serializers.SerializerMethodField()
     image = Base64ImageField(source='recipe.image', required=False)
     user_id = serializers.CharField(write_only=True)
     recipe_id = serializers.CharField(write_only=True)
     id = serializers.IntegerField(source='recipe.id', read_only=True)
-
-    # def get_image(self, favorite):
-    #     request = self.context['request']
-    #     return request.build_absolute_uri(favorite.recipe.image.url)
 
     class Meta:
         model = Favorite
