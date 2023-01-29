@@ -509,6 +509,7 @@ class RecipesEndpointsTests(APITestCase):
         for field, inst in self.fields.items():
             with self.subTest(field=field):
                 self.assertIsInstance(data[field], inst)
+        self.assertTrue(response.data['results'][0]['image'].startswith('http://'))
 
     def test_recipe_detail_fields(self):
         """Are the returned fields in recipe details correct."""
@@ -587,7 +588,7 @@ class RecipesEndpointsTests(APITestCase):
             for slug in ('red', 'green', 'blue')
         ]
         recipes = [
-            Recipe.objects.create(author=self.author, cooking_time=1)
+            generate_recipe(self.author)
             for _ in range(3)
         ]
         recipes[0].tags.set([tags[0], tags[1]])
@@ -638,9 +639,7 @@ class RecipesEndpointsTests(APITestCase):
             Ingredient.objects.create(name=name, measurement_unit=m_unit)
             for name, m_unit in {'Carrots': 'g.', 'Water': 'oz'}.items()
         ]
-        recipe = Recipe.objects.create(
-            author=self.author, name='test_upd', image='1.jpg', cooking_time=1
-        )
+        recipe = generate_recipe(self.author)
         recipe.tags.set([tags[0], tags[1]])
         RecipeIngredient.objects.create(
             recipe=recipe, ingredient=ingredients[0], amount=10
@@ -713,9 +712,7 @@ class FavoriteEndpointsTests(APITestCase):
         cls.user = User.objects.create(email='amused@to.d', username='Bill')
         cls.user_client = APIClient()
         cls.user_client.force_authenticate(cls.user)
-        cls.recipe = Recipe.objects.create(
-            cooking_time=1, author=cls.author, image='r.jpg'
-        )
+        cls.recipe = generate_recipe(cls.author)
         super().setUpClass()
 
     def test_favorite_endpoint(self):
@@ -808,16 +805,7 @@ class PaginationTests(APITestCase):
         ]
         cls.subscriber_client = APIClient()
         cls.subscriber_client.force_authenticate(cls.subscriber)
-        cls.recipes = [
-            Recipe.objects.create(
-                author=cls.subscriber,
-                text=cls.fake.text(),
-                name=cls.fake.sentence(),
-                cooking_time=cls.fake.pyint(),
-                image=cls.fake.file_path(depth=3, category='image'),
-            )
-            for _ in range(10)
-        ]
+        cls.recipes = [generate_recipe(cls.subscriber) for _ in range(10)]
         cls.paginated_pages = {
             reverse('users-list'): User.objects.count(),
             reverse('users-subscriptions'): Subscription.objects.count(),
