@@ -26,6 +26,9 @@ class Base64ImageField(serializers.ImageField):
             )
         return super().to_internal_value(data)
 
+    def to_representation(self, value):
+        return value.url
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
