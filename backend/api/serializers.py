@@ -79,7 +79,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         source='recipe.cooking_time', read_only=True
     )
-    image = Base64ImageField(source='recipe.image', required=False)
+    image = Base64ImageField(source='recipe.image', read_only=True)
     user_id = serializers.CharField(write_only=True)
     recipe_id = serializers.CharField(write_only=True)
     id = serializers.IntegerField(source='recipe.id', read_only=True)

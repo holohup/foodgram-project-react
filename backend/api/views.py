@@ -121,9 +121,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             user=request.user, recipe=recipe
         )
         if created:
-            # context = {}
-            # context['request'] = request
-            # serializer = RecipeMiniSerializer(instance=recipe, context=context)
             serializer = RecipeMiniSerializer(instance=recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(
@@ -143,8 +140,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         data = {'user_id': request.user.id, 'recipe_id': pk}
-        # context = {'request': request}
-        # serializer = FavoriteSerializer(data=data, context=context)
         serializer = FavoriteSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
