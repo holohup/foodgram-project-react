@@ -3,7 +3,7 @@ name: Foodgram CI/CD
 on: [push]
 
 env: 
-  REPO_TAG: 'holohup/foodgram_backend:latest'
+  REPO_TAG: holohup/foodgram_backend:latest
 
 jobs:
   code_tests:
@@ -77,7 +77,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
             echo '${{ env.REPO_TAG }}' >> foodgram/infra/dockerpull.txt
-            echo 'docker pull ${{ end.REPO_TAG }}' >> foodgram/infra/dockerpull.txt
+            echo 'docker pull ${{ env.REPO_TAG }}' >> foodgram/infra/dockerpull.txt
             docker-compose --project-directory foodgram/infra stop backend
             docker pull $REPO_TAG
             echo '${{ secrets.DB_CREDENTIALS }}' > foodgram/infra/.env
