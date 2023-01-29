@@ -10,14 +10,8 @@ from rest_framework.test import APIClient, APITestCase, override_settings
 
 from api.routers import ALLOWED_ROUTE_NAMES
 from api.urls import router
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -35,6 +29,7 @@ def generate_recipe(author):
         cooking_time=fake.pyint(),
         image=fake.file_path(depth=3, category='image'),
     )
+
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)

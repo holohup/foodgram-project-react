@@ -9,7 +9,7 @@ SECRET_KEY = os.getenv(
 
 DEBUG = strtobool(os.getenv('DJANGO_DEBUG_MODE', 'False'))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -174,3 +174,5 @@ CACHES = {
         'LOCATION': 'foodgram-localmemcache',
     }
 }
+
+HOST_URL = 'http://' + ALLOWED_HOSTS[1]

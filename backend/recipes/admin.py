@@ -20,10 +20,10 @@ class RecipeIngredientInline(admin.TabularInline):
 
 @admin.register(Tag)
 class TagsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'colored', 'slug')
+    list_display = ('name', 'colour', 'slug')
     list_display_links = ('name',)
 
-    def colored(self, obj):
+    def colour(self, obj):
         return format_html(
             f'<span style="color: {obj.color};">{obj.color}</span>'
         )
