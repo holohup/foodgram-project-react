@@ -33,7 +33,7 @@ services:
   db:
     image: postgres:13.0-alpine
     volumes:
-      - ~/foodgram:/var/lib/postgresql/data/
+      - ~/foodgram/data:/var/lib/postgresql/data/
     env_file:
       - ./.env
     restart: unless-stopped
@@ -45,9 +45,7 @@ services:
       start_period: 60s
 
   backend:
-    # image: holohup/infra-web:latest
-    build:
-      context: ../backend
+    image: holohup/foodgram_backend:latest
     restart: unless-stopped
     volumes:
       - static_value:/app/static/
