@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
@@ -177,8 +178,21 @@ class CustomFunctionsTests(TestPresets):
     def test_favorited(self):
         """Checks if Recipe.favorited works."""
 
-        self.assertEqual(self.recipe.favorited, 0)
+        cache.clear()
+        prev_favorited = self.recipe.favorited
         favorite = Favorite.objects.create(recipe=self.recipe, user=self.user)
-        self.assertEqual(self.recipe.favorited, 1)
+        cache.clear()
+        self.assertEqual(self.recipe.favorited, prev_favorited + 1)
         favorite.delete()
-        self.assertEqual(self.recipe.favorited, 0)
+        cache.clear()
+        self.assertEqual(self.recipe.favorited, prev_favorited)
+    
+    def test_cache(self):
+        """Checks if favorited cache works."""
+
+        prev_favorited = self.recipe.favorited
+        Favorite.objects.create(recipe=self.recipe, user=self.user)
+        self.assertEqual(self.recipe.favorited, prev_favorited)
+        cache.clear()
+        self.assertEqual(self.recipe.favorited, prev_favorited + 1)
+

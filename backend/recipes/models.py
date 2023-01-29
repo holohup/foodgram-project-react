@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.html import mark_safe
-from django.core.cache import cache
 
 User = get_user_model()
 

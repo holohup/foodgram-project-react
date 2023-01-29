@@ -8,8 +8,16 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase, override_settings
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from api.routers import ALLOWED_ROUTE_NAMES
+from api.urls import router
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -509,7 +517,9 @@ class RecipesEndpointsTests(APITestCase):
         for field, inst in self.fields.items():
             with self.subTest(field=field):
                 self.assertIsInstance(data[field], inst)
-        self.assertTrue(response.data['results'][0]['image'].startswith('http://'))
+        self.assertTrue(
+            response.data['results'][0]['image'].startswith('http://')
+        )
 
     def test_recipe_detail_fields(self):
         """Are the returned fields in recipe details correct."""
@@ -587,10 +597,7 @@ class RecipesEndpointsTests(APITestCase):
             Tag.objects.create(name=slug, slug=slug, color=slug)
             for slug in ('red', 'green', 'blue')
         ]
-        recipes = [
-            generate_recipe(self.author)
-            for _ in range(3)
-        ]
+        recipes = [generate_recipe(self.author) for _ in range(3)]
         recipes[0].tags.set([tags[0], tags[1]])
         recipes[1].tags.set([tags[1], tags[2]])
         recipes[2].tags.set([tags[2], tags[0]])
@@ -830,3 +837,25 @@ class PaginationTests(APITestCase):
             self.assertTrue(
                 response.data['previous'].endswith('?limit=3&page=2')
             )
+
+
+class URLTests(APITestCase):
+    """Tests for project urls."""
+
+    def test_djoser_filtered(self):
+        """Tests if djosers urls are sucessfully filtered out."""
+
+        url_names = set(url.name for url in router.get_urls())
+        for endpoint_name in (
+            'users-resend-activation',
+            'users-reset-password',
+            'users-reset-password-confirm',
+            'users-reset-username',
+            'users-reset-username-confirm',
+            'users-set-username',
+        ):
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertNotIn(endpoint_name, url_names)
+        for endpoint_name in ALLOWED_ROUTE_NAMES:
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertIn(endpoint_name, url_names)
