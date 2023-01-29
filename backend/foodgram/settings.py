@@ -166,3 +166,11 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1', '*']
 #     },
 # }
 DEFAULT_RECIPES_LIMIT = 5
+FAVORITED_CACHE_SECONDS_TTL = 60
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'foodgram-localmemcache',
+    }
+}

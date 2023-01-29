@@ -1,20 +1,38 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.html import mark_safe
+from django.core.cache import cache
 
 User = get_user_model()
 
 
 class Tag(models.Model):
+
     name = models.CharField(
         max_length=200, verbose_name='Tag name', unique=True
     )
-    color = models.CharField(max_length=7, verbose_name='color', unique=True)
+    color = models.CharField(
+        max_length=7,
+        verbose_name='color',
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex='^#[A-Fa-f0-9]{6}$',
+                message='Incorrect HEX color.',
+                code='incorrect_hex_color',
+            )
+        ],
+    )
     slug = models.SlugField(verbose_name='slug', unique=True, max_length=200)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tags'
 
 
 class Ingredient(models.Model):
@@ -64,23 +82,29 @@ class Recipe(models.Model):
         through='RecipeIngredient',
         blank=False,
         verbose_name='Ingredients',
-        related_name='recipes'
+        related_name='recipes',
     )
     tags = models.ManyToManyField(
         Tag, related_name='recipes', blank=True, verbose_name='Tags'
     )
 
     def image_display(self):
-        return mark_safe(
-            f'<img src="{(self.image.url)}" width="150" />'
-        )
+        return mark_safe(f'<img src="{(self.image.url)}" width="150" />')
 
     def __str__(self):
         return self.name
 
     @property
     def favorited(self):
-        return Favorite.objects.filter(recipe=self).count()
+        favorited = cache.get(f'{self.id}_favorited')
+        if favorited is None:
+            favorited = Favorite.objects.filter(recipe=self).count()
+            cache.set(
+                f'{self.id}_favorited',
+                favorited,
+                settings.FAVORITED_CACHE_SECONDS_TTL,
+            )
+        return favorited
 
     class Meta:
         verbose_name = 'Recipe'
