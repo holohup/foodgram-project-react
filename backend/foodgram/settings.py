@@ -175,4 +175,4 @@ CACHES = {
     }
 }
 
-HOST_URL = 'http://' + ALLOWED_HOSTS[1]
+HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1:8000')
