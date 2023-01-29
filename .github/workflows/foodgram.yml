@@ -3,7 +3,7 @@ name: Foodgram CI/CD
 on: [push]
 
 env: 
-  REPO_TAG: holohup/foodgram_backend:latest
+  REPO_TAG: 'holohup/foodgram_backend:latest'
 
 jobs:
   code_tests:
