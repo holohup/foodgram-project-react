@@ -76,7 +76,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            echo "$REPO_TAG"
+            echo '$REPO_TAG' > foodgram/infra/dockerpull.txt
+            echo 'docker pull $REPO_TAG' >> foodgram/infra/dockerpull.txt
             docker-compose --project-directory foodgram/infra stop backend
             docker pull $REPO_TAG
             echo '${{ secrets.DB_CREDENTIALS }}' > foodgram/infra/.env
