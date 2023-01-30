@@ -19,6 +19,7 @@ ALLOWED_ROUTE_NAMES = [
     'recipes-favorite',
     'recipes-shopping-cart',
     'api-root',
+    'recipes-download-shopping-cart'
 ]
 
 

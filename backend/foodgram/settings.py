@@ -165,6 +165,6 @@ CACHES = {
     }
 }
 
-HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1:8000')
+HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1')
 SHOPPING_CART_FONT = 'DejaVuSans.ttf'
 SHOPPING_CART_BOLD_FONT = 'DejaVuSansCondensed-Bold.ttf'

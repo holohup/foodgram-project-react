@@ -6,6 +6,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+import io
+
+from django.http import HttpResponse
+
+from api.utils import draw_pdf, get_grocery_list, plain_data_to_cart_items
 
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription
@@ -13,10 +18,15 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          RecipeMiniSerializer, RecipeSerializer,
-                          SubscriptionSerializer, TagSerializer)
+from .serializers import (
+    CustomUserSubscriptionsSerializer,
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeMiniSerializer,
+    RecipeSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
@@ -102,7 +112,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filterset_fields = ('author',)
 
     @action(
-        ['post', 'delete'], detail=True,
+        ['post', 'delete'],
+        detail=True,
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, pk):
@@ -144,6 +155,20 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False)
+    def download_shopping_cart(self, request):
+        data = plain_data_to_cart_items(get_grocery_list(request.user))
+        if not data:
+            return Response(
+                'The shopping list is empty', status=status.HTTP_204_NO_CONTENT
+            )
+        buffer = io.BytesIO(bytes(draw_pdf(data)))
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="ShoppingCart.pdf"'
+        return response
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)

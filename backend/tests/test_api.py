@@ -10,8 +10,14 @@ from rest_framework.test import APIClient, APITestCase, override_settings
 
 from api.routers import ALLOWED_ROUTE_NAMES
 from api.urls import router
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -847,6 +853,7 @@ class URLTests(APITestCase):
             'ingredients-list': '/api/ingredients/',
             'recipes-list': '/api/recipes/',
             'api-root': '/api/',
+            'recipes-download-shopping-cart': '/api/recipes/download_shopping_cart/',
         }
         cls.router_detailed_urls = {
             'tags-detail': '/api/tags/1/',
@@ -858,9 +865,6 @@ class URLTests(APITestCase):
         cls.auth_urls = {
             'login': '/api/auth/token/login',
             'logout': '/api/auth/token/logout',
-        }
-        cls.misc_urls = {
-            'shopping_cart_download': '/api/recipes/download_shopping_cart/'
         }
         cls.users_urls = {
             'users-subscribe': '/api/users/1/subscribe/',
@@ -895,9 +899,6 @@ class URLTests(APITestCase):
         for endpoint_name, url in self.router_urls.items():
             with self.subTest(endpoint_name=endpoint_name):
                 self.assertTrue(reverse(endpoint_name).endswith(url))
-        for endpoint_name, url in self.misc_urls.items():
-            with self.subTest(endpoint_name=endpoint_name):
-                self.assertEqual(reverse(endpoint_name), url)
         for endpoint_name, url in self.auth_urls.items():
             with self.subTest(endpoint_name=endpoint_name):
                 self.assertEqual(reverse(endpoint_name), url)
