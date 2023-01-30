@@ -75,7 +75,6 @@ class UnauthorizedUserTests(APITestCase):
             reverse('users-me'),
             reverse('users-subscriptions'),
             reverse('users-subscribe', kwargs={'id': self.author.id}),
-            # reverse('users-detail', kwargs={'pk': self.author.id}),
         )
         post_endpoints = (
             reverse('users-set-password'),
@@ -97,10 +96,10 @@ class UnauthorizedUserTests(APITestCase):
                     self.client.post(endpoint, {}, format='json').status_code,
                     status.HTTP_401_UNAUTHORIZED,
                 )
-
+    
 
 class AuthsEndpointsTests(APITestCase):
-    """ "Tests for auth endpoints."""
+    """Tests for auth endpoints."""
 
     def test_get_token_and_logout(self):
         """Check if we can obtain a working token, and we can delete it."""
