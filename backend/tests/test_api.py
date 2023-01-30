@@ -918,3 +918,11 @@ class URLTests(APITestCase):
                 self.assertTrue(
                     reverse(endpoint_name, kwargs={'id': 1}).endswith(url)
                 )
+
+    def test_custom_404_handler(self):
+        """Test if the custom 404 handler is working."""
+
+        response = self.client.get('/api/sghpehvnwinpwneg')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response['content-type'], 'application/json')
+        self.assertEqual(response.json()['error'], 'The resource was not found')
