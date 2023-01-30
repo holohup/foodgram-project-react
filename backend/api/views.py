@@ -1,4 +1,7 @@
+import io
+
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -6,27 +9,18 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-import io
-
-from django.http import HttpResponse
 
 from api.utils import draw_pdf, get_grocery_list, plain_data_to_cart_items
-
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription
 
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (
-    CustomUserSubscriptionsSerializer,
-    FavoriteSerializer,
-    IngredientSerializer,
-    RecipeMiniSerializer,
-    RecipeSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-)
+from .serializers import (CustomUserSubscriptionsSerializer,
+                          FavoriteSerializer, IngredientSerializer,
+                          RecipeMiniSerializer, RecipeSerializer,
+                          SubscriptionSerializer, TagSerializer)
 
 User = get_user_model()
 
