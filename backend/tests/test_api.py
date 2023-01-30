@@ -10,8 +10,14 @@ from rest_framework.test import APIClient, APITestCase, override_settings
 
 from api.routers import ALLOWED_ROUTE_NAMES
 from api.urls import router
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -96,7 +102,37 @@ class UnauthorizedUserTests(APITestCase):
                     self.client.post(endpoint, {}, format='json').status_code,
                     status.HTTP_401_UNAUTHORIZED,
                 )
-    
+
+    def test_user_registration(self):
+        """Tests if user registration endpoint works as expected."""
+
+        payload = {
+            'email': 'gonna_test@email.com',
+            'username': 'ThisIsMyVillage',
+            'password': 'SuchANicevillage',
+            'first_name': 'Gadiukino',
+        }
+        response = self.client.post(
+            reverse('users-list'), payload, format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        payload['last_name'] = 'Raiders'
+        response = self.client.post(
+            reverse('users-list'), payload, format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data), 5)
+        for field in 'email', 'username', 'first_name', 'last_name':
+            with self.subTest(field=field):
+                self.assertEqual(payload[field], response.data[field])
+        self.assertIn('id', response.data)
+        new_user = User.objects.last()
+        for field in 'email', 'username', 'first_name', 'last_name', 'id':
+            with self.subTest(field=field):
+                self.assertEqual(
+                    response.data[field], getattr(new_user, field)
+                )
+        self.assertTrue(new_user.check_password(payload['password']))
 
 class AuthsEndpointsTests(APITestCase):
     """Tests for auth endpoints."""
@@ -139,10 +175,14 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
             'email': 's_u@i.com',
             'first_name': 'William',
             'last_name': 'Tell',
+            'password': 'WhoWillTell',
         }
         cls.author_details = {
             'username': 's_author',
             'email': 's_author@mail.com',
+            'last_name': 'S_Auth',
+            'first_name': 'I_Me_Mine',
+            'password': 'Walrus',
         }
         cls.fake = Faker()
         super().setUpClass()
@@ -243,8 +283,15 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
             'email': 'user@i.com',
             'first_name': 'William',
             'last_name': 'Tell',
+            'password': 'WhoWillWin',
         }
-        cls.author_details = {'username': 'author', 'email': 'author@mail.com'}
+        cls.author_details = {
+            'username': 'author',
+            'email': 'author@mail.com',
+            'first_name': 'Alexander',
+            'last_name': 'The Great',
+            'password': 'DontConquer',
+        }
         super().setUpClass()
 
     def test_create_user(self):
@@ -332,7 +379,9 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
 
         response = self.user_client.get(reverse('users-me'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for field in self.user_details.keys():
+        user_details = self.user_details
+        user_details.pop('password')
+        for field in user_details.keys():
             with self.subTest(field=field):
                 self.assertEqual(
                     response.data[field], self.user_details[field]
@@ -368,7 +417,11 @@ class ShoppingCardEndpointsTests(APITestCase):
     @classmethod
     def setUpClass(cls):
         cls.author = User.objects.create_user(
-            username='shopper', email='cart_tester@yandex.com'
+            username='shopper',
+            email='cart_tester@yandex.com',
+            password='shopwithme',
+            first_name='checkme',
+            last_name='cmon',
         )
         cls.author_client = APIClient()
         cls.author_client.force_authenticate(cls.author)
@@ -410,9 +463,15 @@ class ShoppingCardEndpointsTests(APITestCase):
 
         recipe = generate_recipe(self.author)
         ShoppingCart.objects.create(recipe=recipe, user=self.author)
-        ingredient = Ingredient.objects.create(name='ladybugs', measurement_unit='ea')
-        RecipeIngredient.objects.create(amount=10, ingredient=ingredient, recipe=recipe)
-        response = self.author_client.get(reverse('recipes-download-shopping-cart'))
+        ingredient = Ingredient.objects.create(
+            name='ladybugs', measurement_unit='ea'
+        )
+        RecipeIngredient.objects.create(
+            amount=10, ingredient=ingredient, recipe=recipe
+        )
+        response = self.author_client.get(
+            reverse('recipes-download-shopping-cart')
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response['content-type'], 'application/pdf')
         self.assertGreaterEqual(len(response.content), 1000)
@@ -924,4 +983,6 @@ class URLTests(APITestCase):
         response = self.client.get('/api/sghpehvnwinpwneg')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response['content-type'], 'application/json')
-        self.assertEqual(response.json()['error'], 'The resource was not found')
+        self.assertEqual(
+            response.json()['error'], 'The resource was not found'
+        )

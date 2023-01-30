@@ -4,8 +4,14 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -21,6 +27,8 @@ class CustomUserTests(TestCase):
             username='Nekrasov',
             email='Nekrasov@yandex.ru',
             password='classic_password',
+            first_name='Great',
+            last_name='Poet',
         )
         self.assertEqual(user.username, 'Nekrasov')
         self.assertEqual(user.email, 'Nekrasov@yandex.ru')
@@ -35,6 +43,8 @@ class CustomUserTests(TestCase):
             username='dostoevsky',
             email='dost_1821@rambler.ru',
             password='esliboganettovsedozvoleno',
+            first_name='Fedor',
+            last_name='Mikhailovich',
         )
         self.assertEqual(admin_user.username, 'dostoevsky')
         self.assertEqual(admin_user.email, 'dost_1821@rambler.ru')
@@ -54,6 +64,8 @@ class CustomUserTests(TestCase):
             username='Long',
             email='my_real_name@gmail.com',
             first_name=long_firstname,
+            last_name='Cook',
+            password='pas$W0rd',
         )
         self.assertEqual(user.first_name, long_firstname)
 
@@ -66,10 +78,18 @@ class TestPresets(TestCase):
         cls.ingredient = Ingredient.objects.create(name='Pumpkin')
         cls.tag = Tag.objects.create(name='breakfast')
         cls.user = User.objects.create_user(
-            username='user1', email='user1@gmail.com'
+            username='user1',
+            email='user1@gmail.com',
+            first_name='Cook1',
+            last_name='Cook1',
+            password='pas$W0rd',
         )
         cls.user2 = User.objects.create_user(
-            username='user2', email='user2@gmail.com'
+            username='user2',
+            email='user2@gmail.com',
+            first_name='Cook2',
+            last_name='Cook2',
+            password='pas$W0rd',
         )
         cls.recipe = Recipe.objects.create(
             author=cls.user,
@@ -186,7 +206,7 @@ class CustomFunctionsTests(TestPresets):
         favorite.delete()
         cache.clear()
         self.assertEqual(self.recipe.favorited, prev_favorited)
-    
+
     def test_cache(self):
         """Checks if favorited cache works."""
 
@@ -195,4 +215,3 @@ class CustomFunctionsTests(TestPresets):
         self.assertEqual(self.recipe.favorited, prev_favorited)
         cache.clear()
         self.assertEqual(self.recipe.favorited, prev_favorited + 1)
-
