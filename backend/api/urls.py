@@ -6,13 +6,13 @@ from .views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
 
 router = CustomRouter()
 
-router.register(r'users', CustomUserViewSet, basename='users')
+router.register('users', CustomUserViewSet, basename='users')
 router.register('tags', TagViewSet, basename='tags')
 router.register('ingredients', IngredientViewSet, basename='ingredients')
 router.register('recipes', RecipesViewSet, basename='recipes')
 
 djoser_urlpatterns = [
-    path('auth', include('djoser.urls.authtoken')),
+    path('auth/', include('djoser.urls.authtoken')),
 ]
 
 urlpatterns = [

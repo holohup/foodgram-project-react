@@ -23,14 +23,14 @@ User = get_user_model()
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TagSerializer
-    queryset = Tag.objects.all().order_by('name')
+    queryset = Tag.objects.all().order_by('slug')
     permission_classes = [AllowAny]
     pagination_class = None
 
 
 class IngredientViewSet(TagViewSet):
     serializer_class = IngredientSerializer
-    queryset = Ingredient.objects.all().order_by('name')
+    queryset = Ingredient.objects.all().order_by('id')
     filter_backends = (UnquoteSearchFilter, DjangoFilterBackend)
     search_fields = ('name',)
 
@@ -149,7 +149,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        queryset = Recipe.objects.all()
+        queryset = Recipe.objects.all().order_by('-pub_date')
         if self.action != 'list':
             return queryset
         params = self.request.query_params

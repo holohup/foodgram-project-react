@@ -7,6 +7,9 @@ djoser==2.1.0
 Faker==16.6.0
 django-filter==2.4.0
 
+fpdf==1.7.2
+fpdf2==2.6.1
+
 flake8==5.0.4
 pep8-naming==0.13.3
 flake8-broken-line==0.6.0

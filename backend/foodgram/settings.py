@@ -125,16 +125,6 @@ DJOSER = {
     },
 }
 
-# CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1', '*']
-# CORS_ALLOWED_ORIGINS = [*]
-# CORS_ALLOW_METHODS = (
-#         'GET',
-#         'POST',
-#         'PUT',
-#         'PATCH',
-#         'DELETE',
-#         'OPTIONS'
-#     )
 # LOGGING = {
 #     'version': 1,
 #     'disable_existing_loggers': True,
@@ -176,3 +166,6 @@ CACHES = {
 }
 
 HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1:8000')
+SHOPPING_CART_FONT = 'DejaVuSans.ttf'
+SHOPPING_CART_BOLD_FONT = 'DejaVuSansCondensed-Bold.ttf'
+

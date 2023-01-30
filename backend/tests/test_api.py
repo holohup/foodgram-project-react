@@ -31,7 +31,6 @@ def generate_recipe(author):
     )
 
 
-
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class AuthorizedUserAuthorPresets(APITestCase):
     """Preset for the following classes to inherit."""
@@ -837,10 +836,42 @@ class PaginationTests(APITestCase):
 class URLTests(APITestCase):
     """Tests for project urls."""
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.router_urls = {
+            'users-list': '/api/users/',
+            'users-me': '/api/users/me/',
+            'users-subscriptions': '/api/users/subscriptions/',
+            'users-set-password': '/api/users/set_password/',
+            'tags-list': '/api/tags/',
+            'ingredients-list': '/api/ingredients/',
+            'recipes-list': '/api/recipes/',
+            'api-root': '/api/',
+        }
+        cls.router_detailed_urls = {
+            'tags-detail': '/api/tags/1/',
+            'ingredients-detail': '/api/ingredients/1/',
+            'recipes-detail': '/api/recipes/1/',
+            'recipes-shopping-cart': '/api/recipes/1/shopping_cart/',
+            'recipes-favorite': '/api/recipes/1/favorite/',
+        }
+        cls.auth_urls = {
+            'login': '/api/auth/token/login',
+            'logout': '/api/auth/token/logout',
+        }
+        cls.misc_urls = {
+            'shopping_cart_download': '/api/recipes/download_shopping_cart/'
+        }
+        cls.users_urls = {
+            'users-subscribe': '/api/users/1/subscribe/',
+            'users-detail': '/api/users/1/',
+        }
+        return super().setUpClass()
+
     def test_djoser_filtered(self):
         """Tests if djosers urls are sucessfully filtered out."""
 
-        url_names = set(url.name for url in router.get_urls())
+        filtered_urls = set(url.name for url in router.get_urls())
         for endpoint_name in (
             'users-resend-activation',
             'users-reset-password',
@@ -850,7 +881,33 @@ class URLTests(APITestCase):
             'users-set-username',
         ):
             with self.subTest(endpoint_name=endpoint_name):
-                self.assertNotIn(endpoint_name, url_names)
-        for endpoint_name in ALLOWED_ROUTE_NAMES:
+                self.assertNotIn(endpoint_name, filtered_urls)
+        for endpoint_name in self.router_urls.keys():
             with self.subTest(endpoint_name=endpoint_name):
-                self.assertIn(endpoint_name, url_names)
+                self.assertIn(endpoint_name, filtered_urls)
+        for endpoint_name in self.router_detailed_urls.keys():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertIn(endpoint_name, filtered_urls)
+
+    def test_resolved_urls(self):
+        """Tests if the resolved urls comply to the specifications."""
+
+        for endpoint_name, url in self.router_urls.items():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertTrue(reverse(endpoint_name).endswith(url))
+        for endpoint_name, url in self.misc_urls.items():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertEqual(reverse(endpoint_name), url)
+        for endpoint_name, url in self.auth_urls.items():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertEqual(reverse(endpoint_name), url)
+        for endpoint_name, url in self.router_detailed_urls.items():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertTrue(
+                    reverse(endpoint_name, kwargs={'pk': 1}).endswith(url)
+                )
+        for endpoint_name, url in self.users_urls.items():
+            with self.subTest(endpoint_name=endpoint_name):
+                self.assertTrue(
+                    reverse(endpoint_name, kwargs={'id': 1}).endswith(url)
+                )
