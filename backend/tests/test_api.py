@@ -406,6 +406,18 @@ class ShoppingCardEndpointsTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_shopping_cart_pdf_download(self):
+        """Tests if the PDF download endpoint works as intended."""
+
+        recipe = generate_recipe(self.author)
+        ShoppingCart.objects.create(recipe=recipe, user=self.author)
+        ingredient = Ingredient.objects.create(name='ladybugs', measurement_unit='ea')
+        RecipeIngredient.objects.create(amount=10, ingredient=ingredient, recipe=recipe)
+        response = self.author_client.get(reverse('recipes-download-shopping-cart'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['content-type'], 'application/pdf')
+        self.assertGreaterEqual(len(response.content), 1000)
+
 
 class IngredientEndpointsTests(APITestCase):
     """Tests for ingredients endpoins."""
