@@ -1,5 +1,5 @@
 import io
-
+from django.db.models import Case, BooleanField, Value, When, Exists, OuterRef, Prefetch
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -17,17 +17,22 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          RecipeMiniSerializer, RecipeSerializer,
-                          SubscriptionSerializer, TagSerializer)
+from .serializers import (
+    CustomUserSubscriptionsSerializer,
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeMiniSerializer,
+    RecipeSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TagSerializer
-    queryset = Tag.objects.all().order_by('slug')
+    queryset = Tag.objects.all()
     permission_classes = [AllowAny]
     pagination_class = None
 
@@ -168,14 +173,35 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        queryset = Recipe.objects.all().order_by('-pub_date')
+        user = self.request.user
+        queryset = (
+            Recipe.objects.all()
+            .order_by('-pub_date')
+            .select_related('author')
+            .prefetch_related('tags')
+            # .prefetch_related('recipeingredients',)
+            
+            .prefetch_related('ingredients')
+            .prefetch_related('recipeingredients')
+
+            .annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(recipe=OuterRef('id'), user=user)
+                )
+            )
+            .annotate(
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(recipe=OuterRef('id'), user=user)
+                )
+            )
+        )
+
         if self.action != 'list':
             return queryset
         params = self.request.query_params
         tags = params.getlist('tags')
         if tags:
             queryset = queryset.filter(tags__slug__in=tags)
-        user = self.request.user
         if user.is_anonymous:
             return queryset
         if params.get('is_favorited') == '1':

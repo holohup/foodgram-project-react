@@ -70,7 +70,7 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
             'image',
             'cooking_time',
         )
-        read_only_fields = ('id', 'name', 'cooking_time')
+        read_only_fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -207,8 +207,10 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         many=True, source='recipeingredients'
     )
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    # is_favorited = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField()
+    is_in_shopping_cart = serializers.BooleanField()
+    # is_in_shopping_cart = serializers.SerializerMethodField()
     author = CustomUserSubscriptionsSerializer(read_only=True, required=False)
 
     class Meta:

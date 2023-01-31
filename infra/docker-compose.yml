@@ -33,7 +33,7 @@ services:
   db:
     image: postgres:13.0-alpine
     volumes:
-      - ~/foodgram/data:/var/lib/postgresql/data/
+      - db_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
     restart: unless-stopped
@@ -63,3 +63,4 @@ services:
 volumes:
   static_value:
   media_value:
+  db_data:
