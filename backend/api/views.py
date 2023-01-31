@@ -61,7 +61,7 @@ class IngredientViewSet(TagViewSet):
         data_notstartswith = self.get_serializer(
             queryset.exclude(name__istartswith=search_term), many=True
         ).data
-        
+
         return Response(list(data_startswith) + list(data_notstartswith))
 
 
