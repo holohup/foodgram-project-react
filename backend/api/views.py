@@ -1,6 +1,8 @@
 import io
-from django.db.models import Case, BooleanField, Value, When, Exists, OuterRef, Prefetch
+
 from django.contrib.auth import get_user_model
+# from django.db.models import (BooleanField, Case, Exists, OuterRef, Prefetch,
+#                               Value, When)
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,15 +19,10 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (
-    CustomUserSubscriptionsSerializer,
-    FavoriteSerializer,
-    IngredientSerializer,
-    RecipeMiniSerializer,
-    RecipeSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-)
+from .serializers import (CustomUserSubscriptionsSerializer,
+                          FavoriteSerializer, IngredientSerializer,
+                          RecipeMiniSerializer, RecipeSerializer,
+                          SubscriptionSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -179,21 +176,20 @@ class RecipesViewSet(viewsets.ModelViewSet):
             .order_by('-pub_date')
             .select_related('author')
             .prefetch_related('tags')
-            # .prefetch_related('recipeingredients',)
-            
             .prefetch_related('ingredients')
             .prefetch_related('recipeingredients')
-
-            .annotate(
-                is_favorited=Exists(
-                    Favorite.objects.filter(recipe=OuterRef('id'), user=user)
-                )
-            )
-            .annotate(
-                is_in_shopping_cart=Exists(
-                    ShoppingCart.objects.filter(recipe=OuterRef('id'), user=user)
-                )
-            )
+            # .annotate(
+            #     is_favorited=Exists(
+            #         Favorite.objects.filter(recipe=OuterRef('id'), user=user)
+            #     )
+            # )
+            # .annotate(
+            #     is_in_shopping_cart=Exists(
+            #         ShoppingCart.objects.filter(
+            #             recipe=OuterRef('id'), user=user
+            #         )
+            #     )
+            # )
         )
 
         if self.action != 'list':
