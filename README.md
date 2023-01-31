@@ -1,4 +1,4 @@
-![API YamDB workflow](https://github.com/holohup/foodgram_project_react/actions/workflows/foodgram.yml/badge.svg)
+![API YamDB workflow](https://github.com/holohup/foodgram-project-react/actions/workflows/foodgram.yml/badge.svg)
 
 # Дипломный проект - бэкэнд для Foodgram
 
@@ -22,11 +22,18 @@
 
 ### Запустить на своем компьютере при помощи docker-compose
 
+#### Скачиваем и запускаем проект:
+
 ```
-git clone https://github.com/holohup/foodgram-project-react.git && cd foodgram-project-react/infra && mv .env.sample .env && docker-compose up -d --remove-orphans
+git clone https://github.com/holohup/foodgram-project-react.git && cd foodgram-project-react/infra && cp .env.sample .env && docker-compose up -d --remove-orphans
 ```
 Обратите внимание: в файле _.env.sample_ лежат тестовые настройки, необходимые для запуска проекта. Отредактируйте их для себя. Если Вы хотите запустить проект на сервере, или вообще любом компьютере, отличным от Вашего текущего, убедитесь, что Вы раскомментировали последнюю строчку этого файла.
 
+#### Собираем статику, делаем миграции:
+
+```
+docker-compose exec -it backend python manage.py collectstatic --noinput && docker-compose exec -it backend python manage.py migrate
+```
 После успешной установки можно сразу посмотреть, как проект работает: http://localhost
 Ознакомиться с подробной спецификацией на эндпоинты можно по адресу http://localhost/api/docs
 
