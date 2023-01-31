@@ -1,8 +1,16 @@
 import io
 
 from django.contrib.auth import get_user_model
-# from django.db.models import (BooleanField, Case, Exists, OuterRef, Prefetch,
-#                               Value, When)
+# from django.db.models import (
+#     BooleanField,
+#     Case,
+#     Exists,
+#     OuterRef,
+#     Prefetch,
+#     Value,
+#     When,
+#     Count,
+# )
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -53,6 +61,7 @@ class IngredientViewSet(TagViewSet):
         data_notstartswith = self.get_serializer(
             queryset.exclude(name__istartswith=search_term), many=True
         ).data
+        
         return Response(list(data_startswith) + list(data_notstartswith))
 
 
@@ -175,9 +184,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             Recipe.objects.all()
             .order_by('-pub_date')
             .select_related('author')
-            .prefetch_related('tags')
-            .prefetch_related('ingredients')
-            .prefetch_related('recipeingredients')
+            .prefetch_related('tags', 'ingredients', 'favorite')
             # .annotate(
             #     is_favorited=Exists(
             #         Favorite.objects.filter(recipe=OuterRef('id'), user=user)
@@ -197,7 +204,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         params = self.request.query_params
         tags = params.getlist('tags')
         if tags:
-            queryset = queryset.filter(tags__slug__in=tags)
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
         if user.is_anonymous:
             return queryset
         if params.get('is_favorited') == '1':

@@ -154,15 +154,16 @@ DJOSER = {
 #         },
 #     },
 # }
-DEFAULT_RECIPES_LIMIT = 5
-FAVORITED_CACHE_SECONDS_TTL = 60
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'foodgram-localmemcache',
-    }
-}
+# DEFAULT_RECIPES_LIMIT = 5
+# FAVORITED_CACHE_SECONDS_TTL = 60
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+#         'LOCATION': 'foodgram-localmemcache',
+#     }
+# }
 
 HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1')
 SHOPPING_CART_FONT = 'DejaVuSans.ttf'

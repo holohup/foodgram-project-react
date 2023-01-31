@@ -61,6 +61,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeMiniSerializer(serializers.ModelSerializer):
+    image = Base64ImageField(read_only=True)
 
     class Meta:
         model = Recipe
