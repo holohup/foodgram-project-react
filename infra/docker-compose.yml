@@ -2,9 +2,7 @@ version: '3.3'
 services:
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: holohup/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
   nginx:
@@ -33,7 +31,7 @@ services:
   db:
     image: postgres:13.0-alpine
     volumes:
-      - db_data:/var/lib/postgresql/data/
+      - ~/foodgram/data:/var/lib/postgresql/data/
     env_file:
       - ./.env
     restart: unless-stopped
@@ -47,6 +45,8 @@ services:
   backend:
     image: holohup/foodgram_backend:latest
     restart: unless-stopped
+    env_file:
+      - ./.env
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
