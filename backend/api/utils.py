@@ -41,7 +41,7 @@ def plain_data_to_cart_items(data: dict) -> List[ShoppingCartItem]:
 
 
 class ShoppingCartPDF:
-    """Class for a shopping cart PDF."""
+    """Class for a shopping cart PDF with public methods."""
 
     def __init__(self, cell_h=None, name_cell_w=None, font_size=8) -> None:
         self.font_size = font_size
