@@ -1,32 +1,18 @@
 import io
-from copy import deepcopy
+
 from django.contrib.auth import get_user_model
-from django.db.models import (
-    BooleanField,
-    Case,
-    Exists,
-    OuterRef,
-    Prefetch,
-    Value,
-    When,
-    Count,
-    Subquery,
-)
+from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import status, viewsets, views
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.mixins import CreateModelMixin, DestroyModelMixin
-from rest_framework.generics import (
-    GenericAPIView,
-    CreateAPIView,
-    DestroyAPIView,
-)
-from rest_framework.viewsets import GenericViewSet
+
 from api.utils import draw_pdf, get_grocery_list, plain_data_to_cart_items
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription
@@ -34,15 +20,10 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (
-    CustomUserSubscriptionsSerializer,
-    FavoriteSerializer,
-    IngredientSerializer,
-    RecipeMiniSerializer,
-    RecipeSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-)
+from .serializers import (CustomUserSubscriptionsSerializer,
+                          FavoriteSerializer, IngredientSerializer,
+                          RecipeMiniSerializer, RecipeSerializer,
+                          SubscriptionSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -80,7 +61,6 @@ class IngredientViewSet(TagViewSet):
 class FavoriteView(GenericAPIView, CreateModelMixin, DestroyModelMixin):
     queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
-    # pagination_class = None
 
     def delete(self, request, pk, *args, **kwargs):
         return self.destroy(request, pk, *args, **kwargs)
@@ -146,26 +126,17 @@ class CustomUserViewSet(UserViewSet):
 
     def get_queryset(self):
         queryset = User.objects.all().order_by('username')
-        # if self.request.method == 'GET':
-        #     subscription = (
-        #         Subscription.objects.none()
-        #         if self.request.user.is_anonymous
-        #         else Subscription.objects.filter(
-        #             user=self.request.user, author=OuterRef('id')
-        #         )
-        #     )
-        #     queryset = queryset.annotate(is_subscribed=Exists(subscription))
-        # print(*queryset)
-
-        # queryset = queryset.annotate(
-        #     is_subscribed=Case(
-        #         When(self.request.user.is_anonymous, then=False),
-        #         default=Exists(Subscription.objects.filter(
-        #             user=self.request.user, author=OuterRef('id')
-        #         )),
-        #         output_field=BooleanField(),
-        #     )
-        # )
+        if self.request.method == 'GET':
+            subscription = (
+                Subscription.objects.none()
+                if self.request.user.is_anonymous
+                else Subscription.objects.filter(
+                    user=self.request.user, author=OuterRef('id')
+                )
+            )
+            queryset = queryset.annotate(is_subscribed=Exists(subscription))
+        if self.request.user.is_anonymous:
+            len(queryset)
         return queryset
 
 
@@ -203,23 +174,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # @action(['post', 'delete'], detail=True)
-    # def favorite(self, request, pk):
-    #     recipe = get_object_or_404(Recipe, pk=pk)
-    #     if request.method == 'DELETE':
-    #         favorite = get_object_or_404(
-    #             Favorite,
-    #             user=request.user,
-    #             recipe=recipe,
-    #         )
-    #         favorite.delete()
-    #         return Response(status=status.HTTP_204_NO_CONTENT)
-    #     data = {'user_id': request.user.id, 'recipe_id': pk}
-    #     serializer = FavoriteSerializer(data=data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
-
     @action(detail=False)
     def download_shopping_cart(self, request):
         data = plain_data_to_cart_items(get_grocery_list(request.user))
@@ -244,18 +198,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             .order_by('-pub_date')
             .select_related('author')
             .prefetch_related('tags', 'ingredients', 'favorite')
-            # .annotate(
-            #     is_favorited=Exists(
-            #         Favorite.objects.filter(recipe=OuterRef('id'), user=user)
-            #     )
-            # )
-            # .annotate(
-            #     is_in_shopping_cart=Exists(
-            #         ShoppingCart.objects.filter(
-            #             recipe=OuterRef('id'), user=user
-            #         )
-            #     )
-            # )
         )
 
         if self.action != 'list':

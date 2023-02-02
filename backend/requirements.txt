@@ -6,24 +6,9 @@ Pillow==9.0.0
 djoser==2.1.0
 Faker==16.6.0
 django-filter==2.4.0
-
-fpdf==1.7.2
 fpdf2==2.6.1
-
 flake8==5.0.4
 pep8-naming==0.13.3
 flake8-broken-line==0.6.0
 flake8-return==1.2.0
 flake8-isort==6.0.0
-
-
-# djangorestframework-simplejwt==4.7.2
-#PyJWT==2.1.0
-#python-dotenv==0.21.0
-#djangorestframework_simplejwt==5.2.1
-
-
-#pytest==6.2.4
-#pytest-django==4.4.0
-#pytest-pythonpath==0.7.3
-

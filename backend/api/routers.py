@@ -14,12 +14,9 @@ ALLOWED_ROUTE_NAMES = [
     'ingredients-detail',
     'recipes-list',
     'recipes-detail',
-    # 'recipes-favorite',
     'recipes-shopping-cart',
     'api-root',
     'recipes-download-shopping-cart',
-    # 'favorite-list', #
-    # 'favorite-detail'#
 ]
 
 

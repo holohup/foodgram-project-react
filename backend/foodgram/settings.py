@@ -119,41 +119,9 @@ DJOSER = {
         'user': ['api.permissions.ReadOnly'],
     },
     'SERIALIZERS': {
-        # 'user': 'api.serializers.CustomUserSubscriptionsSerializer',
         'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
     },
 }
-
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': True,
-#     'formatters': {
-#         'formatter': {
-#             '()': 'django.utils.log.ServerFormatter',
-#             'format': '[%(name)s %(asctime)s %(filename)s: %(lineno)d - %(funcName)s()] %(message)s',
-#             'datefmt': '%Y-%m-%d %H:%M:%S',
-#         }
-#     },
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'formatter',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ('console',),
-#             'level': 'INFO',
-#             'propagate': False,
-#         },
-#         'django.db.backends': {
-#             'handlers': ('console',),
-#             'level': 'DEBUG',
-#             'propagate': False,
-#         },
-#     },
-# }
 
 DEFAULT_RECIPES_LIMIT = 5
 FAVORITED_CACHE_SECONDS_TTL = 60

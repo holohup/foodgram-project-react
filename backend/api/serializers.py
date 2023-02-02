@@ -8,14 +8,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -127,20 +121,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 
 class CustomUserSubscriptionsSerializer(CustomUserSerializer):
-    is_subscribed = serializers.SerializerMethodField()
-    # is_subscribed = serializers.BooleanField(default=False)
+    is_subscribed = serializers.BooleanField(default=False)
 
     class Meta:
         model = User
         fields = CustomUserSerializer.Meta.fields + ('is_subscribed',)
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        user = request.user
-        return (
-            user.is_authenticated
-            and Subscription.objects.filter(author=obj, user=user).exists()
-        )
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -220,8 +205,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True, source='recipeingredients'
     )
     is_favorited = serializers.SerializerMethodField()
-    # is_favorited = serializers.BooleanField()
-    # is_in_shopping_cart = serializers.BooleanField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     author = CustomUserSubscriptionsSerializer(read_only=True, required=False)
 

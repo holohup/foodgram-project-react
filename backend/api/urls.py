@@ -1,13 +1,8 @@
 from django.urls import include, path
 
 from .routers import CustomRouter
-from .views import (
-    CustomUserViewSet,
-    IngredientViewSet,
-    RecipesViewSet,
-    TagViewSet,
-    FavoriteView
-)
+from .views import (CustomUserViewSet, FavoriteView, IngredientViewSet,
+                    RecipesViewSet, TagViewSet)
 
 router = CustomRouter()
 

@@ -1,17 +1,11 @@
 from django.contrib import admin
-from django.forms import CheckboxSelectMultiple
-from django.db import models
 from django.contrib.auth.models import Group
+from django.db import models
+from django.forms import CheckboxSelectMultiple
 from django.utils.html import format_html
 
-from .models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag,
-)
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 
 admin.site.unregister(Group)
 
@@ -51,7 +45,6 @@ class RecipeAdmin(admin.ModelAdmin):
         'name',
         'author',
         'recipe_tags',
-        'favorited',
         'image_display',
     )
     list_filter = ('name', 'tags', 'author')
@@ -93,7 +86,7 @@ class FavoriteAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('recipe', 'user')
+        return qs.select_related('user', 'recipe')
 
 
 @admin.register(ShoppingCart)

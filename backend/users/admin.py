@@ -49,5 +49,8 @@ class CustomUserAdmin(UserAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     list_filter = ('author', 'user')
     list_display = ('id', 'user', 'author',)
-    list_editable = ('author', 'user')
     search_fields = ('author__username', 'user__username')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('author', 'user')
