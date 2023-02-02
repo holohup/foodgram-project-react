@@ -85,7 +85,7 @@ class Recipe(models.Model):
         related_name='recipes',
     )
     tags = models.ManyToManyField(
-        Tag, related_name='recipes', blank=True, verbose_name='Tags'
+        Tag, related_name='recipes', blank=False, verbose_name='Tags'
     )
 
     def image_display(self):

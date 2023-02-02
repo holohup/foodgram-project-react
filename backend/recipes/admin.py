@@ -1,9 +1,17 @@
 from django.contrib import admin
+from django.forms import CheckboxSelectMultiple
+from django.db import models
 from django.contrib.auth.models import Group
 from django.utils.html import format_html
 
-from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingCart, Tag)
+from .models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 
 admin.site.unregister(Group)
 
@@ -12,10 +20,17 @@ class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 0
     autocomplete_fields = ('ingredient',)
+    min_num = 1
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related('ingredient')
+
+
+class TagInline(admin.TabularInline):
+    model = Recipe.tags.through
+    min_num = 1
+    extra = 0
 
 
 @admin.register(Tag)
@@ -40,8 +55,10 @@ class RecipeAdmin(admin.ModelAdmin):
         'image_display',
     )
     list_filter = ('name', 'tags', 'author')
-    filter_horizontal = ('tags',)
     inlines = [RecipeIngredientInline]
+    formfield_overrides = {
+        models.ManyToManyField: {'widget': CheckboxSelectMultiple},
+    }
 
     def recipe_tags(self, obj):
         return [tag.name for tag in obj.tags.all()]

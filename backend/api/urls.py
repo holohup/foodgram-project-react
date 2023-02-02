@@ -1,8 +1,13 @@
 from django.urls import include, path
 
 from .routers import CustomRouter
-from .views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
-                    TagViewSet)
+from .views import (
+    CustomUserViewSet,
+    IngredientViewSet,
+    RecipesViewSet,
+    TagViewSet,
+    FavoriteView
+)
 
 router = CustomRouter()
 
@@ -17,6 +22,11 @@ djoser_urlpatterns = [
 ]
 
 urlpatterns = [
+    path(
+        'recipes/<int:pk>/favorite/',
+        FavoriteView.as_view(),
+        name='recipes-favorite',
+    ),
     path('', include(router.urls)),
     path('', include(djoser_urlpatterns)),
 ]

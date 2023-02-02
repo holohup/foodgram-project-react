@@ -119,7 +119,7 @@ DJOSER = {
         'user': ['api.permissions.ReadOnly'],
     },
     'SERIALIZERS': {
-        'user': 'api.serializers.CustomUserSubscriptionsSerializer',
+        # 'user': 'api.serializers.CustomUserSubscriptionsSerializer',
         'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
     },
 }

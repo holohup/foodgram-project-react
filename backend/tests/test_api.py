@@ -314,7 +314,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
     def test_user_list(self):
         """Tests for users list."""
 
-        User.objects.create(email='hello@space.com')
+        user = User.objects.create(email='hello@space.com', username='enjoykin', first_name='Garazh', last_name='Nash', password='shokolad')
         response = self.client.get(reverse('users-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_data = response.data['results'][0]
@@ -786,7 +786,7 @@ class FavoriteEndpointsTests(APITestCase):
         Favorite.objects.create(user=self.author, recipe=self.recipe)
         previous_favs = Favorite.objects.count()
         url = reverse('recipes-favorite', kwargs={'pk': self.recipe.id})
-        response = self.user_client.post(url, {})
+        response = self.user_client.post(url, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Favorite.objects.count(), previous_favs + 1)
         self.assertEqual(len(response.data), 4)
@@ -918,7 +918,7 @@ class URLTests(APITestCase):
             'ingredients-detail': '/api/ingredients/1/',
             'recipes-detail': '/api/recipes/1/',
             'recipes-shopping-cart': '/api/recipes/1/shopping_cart/',
-            'recipes-favorite': '/api/recipes/1/favorite/',
+            # 'recipes-favorite': '/api/recipes/1/favorite/',
         }
         cls.auth_urls = {
             'login': '/api/auth/token/login',

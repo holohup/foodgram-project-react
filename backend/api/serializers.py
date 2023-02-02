@@ -8,8 +8,14 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -81,9 +87,13 @@ class FavoriteSerializer(serializers.ModelSerializer):
         source='recipe.cooking_time', read_only=True
     )
     image = Base64ImageField(source='recipe.image', read_only=True)
-    user_id = serializers.CharField(write_only=True)
-    recipe_id = serializers.CharField(write_only=True)
     id = serializers.IntegerField(source='recipe.id', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=User.objects.all()
+    )
+    recipe = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=Recipe.objects.all()
+    )
 
     class Meta:
         model = Favorite
@@ -92,16 +102,16 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'name',
             'image',
             'cooking_time',
-            'user_id',
-            'recipe_id',
+            'user',
+            'recipe',
         )
-
-    def validate(self, data):
-        recipe = Recipe.objects.get(id=data['recipe_id'])
-        user = User.objects.get(id=data['user_id'])
-        if not Favorite.objects.filter(user=user, recipe=recipe):
-            return data
-        raise ValidationError('This favorite already exists.')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=['user', 'recipe'],
+                message='You have already favorited this recipe.',
+            )
+        ]
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -118,6 +128,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 class CustomUserSubscriptionsSerializer(CustomUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
+    # is_subscribed = serializers.BooleanField(default=False)
 
     class Meta:
         model = User
