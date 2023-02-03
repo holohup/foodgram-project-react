@@ -2,7 +2,7 @@ version: '3.3'
 services:
 
   frontend:
-    image: holohup/foodgram_frontend_test:latest
+    image: holohup/foodgram_frontend:latest
     volumes:
       - frontend_build:/app/build/
       - redoc:/app/docs/
@@ -11,7 +11,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx2.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - frontend_build:/usr/share/nginx/html/
       - redoc:/usr/share/nginx/html/api/docs/
       - static_value:/var/html/static/
