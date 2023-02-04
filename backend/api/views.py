@@ -20,10 +20,15 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          RecipeMiniSerializer, RecipeSerializer,
-                          SubscriptionSerializer, TagSerializer)
+from .serializers import (
+    CustomUserSubscriptionsSerializer,
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeMiniSerializer,
+    RecipeSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
@@ -127,16 +132,15 @@ class CustomUserViewSet(UserViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = User.objects.all().order_by('username')
-        if self.request.method == 'GET':
-            value = (
-                Value(False, output_field=BooleanField())
-                if user.is_anonymous
-                else Exists(
-                    Subscription.objects.filter(
-                        user=user, author=OuterRef('id')
-                    )
-                )
+        if self.request.method != 'GET':
+            return queryset
+        value = (
+            Value(False, output_field=BooleanField())
+            if user.is_anonymous
+            else Exists(
+                Subscription.objects.filter(user=user, author=OuterRef('id'))
             )
+        )
         return queryset.annotate(is_subscribed=value)
 
 
