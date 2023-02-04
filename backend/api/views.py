@@ -1,7 +1,7 @@
 import io
 
 from django.contrib.auth import get_user_model
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Value, BooleanField
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -20,10 +20,15 @@ from users.models import Subscription
 from .pagination import PageLimitPagination
 from .permissions import AuthorPermissions
 from .search import UnquoteSearchFilter
-from .serializers import (CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          RecipeMiniSerializer, RecipeSerializer,
-                          SubscriptionSerializer, TagSerializer)
+from .serializers import (
+    CustomUserSubscriptionsSerializer,
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeMiniSerializer,
+    RecipeSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+)
 
 User = get_user_model()
 
@@ -125,19 +130,19 @@ class CustomUserViewSet(UserViewSet):
         return Response(self.get_serializer(request.user).data)
 
     def get_queryset(self):
+        user = self.request.user
         queryset = User.objects.all().order_by('username')
         if self.request.method == 'GET':
-            subscription = (
-                Subscription.objects.none()
-                if self.request.user.is_anonymous
-                else Subscription.objects.filter(
-                    user=self.request.user, author=OuterRef('id')
+            value = (
+                Value(False, output_field=BooleanField())
+                if user.is_anonymous
+                else Exists(
+                    Subscription.objects.filter(
+                        user=user, author=OuterRef('id')
+                    )
                 )
             )
-            queryset = queryset.annotate(is_subscribed=Exists(subscription))
-        if self.request.user.is_anonymous:
-            len(queryset)
-        return queryset
+        return queryset.annotate(is_subscribed=value)
 
 
 class RecipesViewSet(viewsets.ModelViewSet):

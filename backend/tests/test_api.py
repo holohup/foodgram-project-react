@@ -10,8 +10,14 @@ from rest_framework.test import APIClient, APITestCase, override_settings
 
 from api.routers import ALLOWED_ROUTE_NAMES
 from api.urls import router
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -127,6 +133,7 @@ class UnauthorizedUserTests(APITestCase):
                     response.data[field], getattr(new_user, field)
                 )
         self.assertTrue(new_user.check_password(payload['password']))
+
 
 class AuthsEndpointsTests(APITestCase):
     """Tests for auth endpoints."""
@@ -266,6 +273,41 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 3)
 
+    def test_users_list_subscription_status(self):
+        """Tests if subscriptions display correctly in users list."""
+
+        user2 = User.objects.create(
+            username='BadAuthor',
+            email='dont@subscribeto.me',
+            first_name='Julia',
+            last_name='Visotskaya',
+            password='SmeshatMaslo',
+        )
+        user_id, author_id, bad_author_id = (
+            self.user.id,
+            self.author.id,
+            user2.id,
+        )
+        url = reverse('users-list') + f'?limit={User.objects.count()}'
+        response = self.user_client.get(url)
+        subscriptions = {
+            user['id']: user['is_subscribed']
+            for user in response.data['results']
+        }
+        for field in user_id, author_id, bad_author_id:
+            with self.subTest(field=field):
+                self.assertFalse(subscriptions[field])
+        Subscription.objects.create(user=self.user, author=self.author)
+        response = self.user_client.get(url)
+        subscriptions = {
+            user['id']: user['is_subscribed']
+            for user in response.data['results']
+        }
+        for field in user_id, bad_author_id:
+            with self.subTest(field=field):
+                self.assertFalse(subscriptions[field])
+        self.assertTrue(subscriptions[author_id])
+
 
 class UsersEndpointTests(AuthorizedUserAuthorPresets):
     """Tests for users endpoints."""
@@ -314,7 +356,13 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
     def test_user_list(self):
         """Tests for users list."""
 
-        user = User.objects.create(email='hello@space.com', username='enjoykin', first_name='Garazh', last_name='Nash', password='shokolad')
+        user = User.objects.create(
+            email='hello@space.com',
+            username='enjoykin',
+            first_name='Garazh',
+            last_name='Nash',
+            password='shokolad',
+        )
         response = self.client.get(reverse('users-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_data = response.data['results'][0]
