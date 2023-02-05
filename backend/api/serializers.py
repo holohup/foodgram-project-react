@@ -10,9 +10,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
-from users.models import Subscription
-
-User = get_user_model()
+from users.models import Subscription, User
 
 
 class Base64ImageField(serializers.ImageField):
