@@ -1,6 +1,5 @@
 import io
 
-from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Exists, OuterRef, Value
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
