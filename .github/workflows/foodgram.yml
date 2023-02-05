@@ -16,7 +16,6 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
-          PGUSER: postgres
           POSTGRES_DB: postgres
 
         options: >-
