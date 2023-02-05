@@ -1,49 +1,15 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class CustomUserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, username, password):
-
-        if not email:
-            raise ValueError('Users must have an email address')
-
-        user = self.model(
-            email=self.normalize_email(email),
-            username=username,
-            last_name=last_name,
-            first_name=first_name,
-        )
-
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(
-        self, email, first_name, last_name, username, password
-    ):
-        user = self.create_user(
-            email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
-        )
-        user.is_admin = True
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
-
-
-class CustomUser(AbstractUser):
-    first_name = models.CharField(('first name'), max_length=150, blank=False)
-    last_name = models.CharField(('last name'), max_length=150, blank=False)
-    email = models.EmailField(('email address'), blank=False, unique=True)
-    objects = CustomUserManager()
+class User(AbstractUser):
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'password']
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
+    email = models.EmailField('email address', unique=True, max_length=254)
+    first_name = models.CharField('first name', max_length=150)
+    last_name = models.CharField('last name', max_length=150)
+    password = models.CharField('password', max_length=150)
 
     class Meta:
         verbose_name = 'user'
@@ -51,9 +17,6 @@ class CustomUser(AbstractUser):
 
     def __str__(self) -> str:
         return self.username
-
-
-User = get_user_model()
 
 
 class Subscription(models.Model):
@@ -70,9 +33,6 @@ class Subscription(models.Model):
         verbose_name='Recipes author',
     )
 
-    def __str__(self):
-        return f'{self.user} subscription on {self.author}'
-
     class Meta:
         verbose_name = 'Subscription'
         verbose_name_plural = 'Subscriptions'
@@ -85,3 +45,6 @@ class Subscription(models.Model):
                 check=~models.Q(user=models.F('author')),
             ),
         ]
+
+    def __str__(self):
+        return f'{self.user} subscription on {self.author}'
