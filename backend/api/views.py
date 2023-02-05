@@ -2,7 +2,7 @@ import io
 
 from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Exists, OuterRef, Value
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -18,17 +18,12 @@ from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription
 
 from .pagination import PageLimitPagination
-from .permissions import AuthorPermissions
+from .permissions import IsAuthorPermission
 from .search import UnquoteSearchFilter
-from .serializers import (
-    CustomUserSubscriptionsSerializer,
-    FavoriteSerializer,
-    IngredientSerializer,
-    RecipeMiniSerializer,
-    RecipeSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-)
+from .serializers import (CustomUserSubscriptionsSerializer,
+                          FavoriteSerializer, IngredientSerializer,
+                          RecipeMiniSerializer, RecipeSerializer,
+                          SubscriptionSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -146,7 +141,7 @@ class CustomUserViewSet(UserViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
-    permission_classes = (AuthorPermissions,)
+    permission_classes = (IsAuthorPermission,)
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('author',)
 
@@ -192,6 +187,23 @@ class RecipesViewSet(viewsets.ModelViewSet):
         ] = 'attachment; filename="ShoppingCart.pdf"'
         return response
 
+    @action(['post', 'delete'], detail=True)
+    def favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
+        if request.method == 'DELETE':
+            favorite = get_object_or_404(
+                Favorite,
+                user=request.user,
+                recipe=recipe,
+            )
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        data = {'user': request.user.id, 'recipe': pk}
+        serializer = FavoriteSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
 
@@ -217,3 +229,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if params.get('is_in_shopping_cart') == '1':
             queryset = queryset.filter(shop_cart__user=user)
         return queryset
+
+
+def custom404(request, exception=None):
+    return JsonResponse(
+        {'error': 'The resource was not found'},
+        status=status.HTTP_404_NOT_FOUND,
+    )

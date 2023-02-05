@@ -64,7 +64,7 @@ docker-compose exec -it backend fixtures/presets.sh
 
 Необходимо склонировать репозиторий:
 ```
-https://github.com/holohup/foodgram-project-react.git
+git clone https://github.com/holohup/foodgram-project-react.git
 ```
 После чего, пройти по стандартным шагам:
 - Создать виртуальное окружение
@@ -73,7 +73,7 @@ https://github.com/holohup/foodgram-project-react.git
 - Настроить проект под свои задачи в settings.py. 
 
 После чего, сделать:
-```
+```bash
 python manage.py runserver
 ```
 Это будет чистый бэкенд, без nginx и фронта, можно редактировать код и проверять, как работают запросы. Это самый близкий способ знакомства с проектом.
