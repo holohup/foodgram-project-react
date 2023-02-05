@@ -9,7 +9,7 @@ SECRET_KEY = os.getenv(
 
 DEBUG = strtobool(os.getenv('DJANGO_DEBUG_MODE', 'False'))
 
-ALLOWED_HOSTS = ('ondeletecascade.ru', '130.193.40.244', 'localhost', '127.0.0.1')
+ALLOWED_HOSTS = ('ondeletecascade.ru', '130.193.40.244', 'backend', 'localhost', '127.0.0.1')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
