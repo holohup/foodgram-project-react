@@ -57,12 +57,12 @@ class ShoppingCartPDF:
         self.pdf.add_font(
             'Regular',
             uni=True,
-            fname=f'recipes/fonts/{settings.SHOPPING_CART_FONT}',
+            fname=f'static/fonts/{settings.SHOPPING_CART_FONT}',
         )
         self.pdf.add_font(
             'Bold',
             uni=True,
-            fname=f'recipes/fonts/{settings.SHOPPING_CART_BOLD_FONT}',
+            fname=f'static/fonts/{settings.SHOPPING_CART_BOLD_FONT}',
         )
         self.pdf.set_font('Bold', size=self.font_size + 2)
         self.pdf.cell(200, 10, txt='Your Grocery List', ln=1, align='C')

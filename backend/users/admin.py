@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 
 from recipes.models import Favorite, ShoppingCart
 from users.forms import CustomUserChangeForm, CustomUserCreationForm
-from users.models import User, Subscription
+from users.models import Subscription, User
 
 
 class SubscriptionInline(admin.TabularInline):
