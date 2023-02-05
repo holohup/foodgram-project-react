@@ -1,11 +1,10 @@
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.html import mark_safe
 
-User = get_user_model()
+from users.models import User
 
 
 class Tag(models.Model):
@@ -17,44 +16,45 @@ class Tag(models.Model):
         max_length=7,
         verbose_name='color',
         unique=True,
-        validators=[
+        validators=(
             RegexValidator(
                 regex='^#[A-Fa-f0-9]{6}$',
                 message='Incorrect HEX color.',
                 code='incorrect_hex_color',
-            )
-        ],
+            ),
+        ),
     )
     slug = models.SlugField(verbose_name='slug', unique=True, max_length=200)
-
-    def __str__(self):
-        return self.name
 
     class Meta:
         verbose_name = 'Tag'
         verbose_name_plural = 'Tags'
 
+    def __str__(self):
+        return self.name
+
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=250, verbose_name='Ingredient name', db_index=True
+        max_length=250,
+        verbose_name='Ingredient name',
     )
     measurement_unit = models.CharField(
         max_length=100, verbose_name='Measurement unit'
     )
 
-    def __str__(self):
-        return f'{self.name}, {self.measurement_unit}'
-
     class Meta:
         verbose_name = 'Ingredient'
         verbose_name_plural = 'Ingredients'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
-                fields=['name', 'measurement_unit'],
+                fields=('name', 'measurement_unit'),
                 name='Unique name and measurement units combo',
             ),
-        ]
+        )
+
+    def __str__(self):
+        return f'{self.name}, {self.measurement_unit}'
 
 
 class Recipe(models.Model):
@@ -66,12 +66,10 @@ class Recipe(models.Model):
         verbose_name='Author',
     )
     name = models.CharField(max_length=200, verbose_name='name')
-    image = models.ImageField(
-        'Picture', upload_to='recipes/', blank=False, null=False
-    )
+    image = models.ImageField('Picture', upload_to='recipes/')
     text = models.TextField('Cooking algorithm')
     pub_date = models.DateTimeField(
-        'Publication_date', auto_now_add=True, db_index=True
+        'Publication date', auto_now_add=True, db_index=True
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name='Cooking Time',
@@ -80,19 +78,23 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         through='RecipeIngredient',
-        blank=False,
         verbose_name='Ingredients',
         related_name='recipes',
     )
     tags = models.ManyToManyField(
-        Tag, related_name='recipes', blank=False, verbose_name='Tags'
+        Tag, related_name='recipes', verbose_name='Tags'
     )
 
-    def image_display(self):
-        return mark_safe(f'<img src="{(self.image.url)}" width="150" />')
+    class Meta:
+        verbose_name = 'Recipe'
+        verbose_name_plural = 'Recipes'
+        ordering = ['-pub_date']
 
     def __str__(self):
         return self.name
+
+    def image_display(self):
+        return mark_safe(f'<img src="{self.image.url}" width="150" />')
 
     @property
     def favorited(self):
@@ -106,11 +108,6 @@ class Recipe(models.Model):
             )
         return favorited
 
-    class Meta:
-        verbose_name = 'Recipe'
-        verbose_name_plural = 'Recipes'
-        ordering = ['-pub_date']
-
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
@@ -121,21 +118,21 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveIntegerField(verbose_name='Ingredient amount')
 
+    class Meta:
+        verbose_name = 'Recipe Ingredient'
+        verbose_name_plural = 'Recipe Ingredients'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredient'),
+                name='Unique ingredient for a recipe',
+            ),
+        )
+
     def __str__(self):
         return (
             f'{self.ingredient.name}, {self.amount} '
             f'{self.ingredient.measurement_unit} for {self.recipe}'
         )
-
-    class Meta:
-        verbose_name = 'Recipe Ingredient'
-        verbose_name_plural = 'Recipe Ingredients'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['recipe', 'ingredient'],
-                name='Unique ingredient for a recipe',
-            ),
-        ]
 
 
 class Favorite(models.Model):
@@ -152,42 +149,42 @@ class Favorite(models.Model):
         verbose_name='Favorited recipe',
     )
 
-    def __str__(self):
-        return f'{self.user} bookmark on {self.recipe}'
-
     class Meta:
         verbose_name = 'Favorite'
         verbose_name_plural = 'Favorites'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
-                fields=['recipe', 'user'], name='Unique user-recipe bookmark'
+                fields=('recipe', 'user'), name='Unique user-recipe bookmark'
             ),
-        ]
+        )
+
+    def __str__(self):
+        return f'{self.user} bookmark on {self.recipe}'
 
 
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shop_cart',
+        related_name='shop_carts',
         verbose_name='Shopping cart user',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='shop_cart',
+        related_name='shop_carts',
         verbose_name='Recipe in shopping cart',
     )
-
-    def __str__(self):
-        return f'{self.recipe} in {self.user} cart'
 
     class Meta:
         verbose_name = 'Shopping cart'
         verbose_name_plural = 'Shopping carts'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
-                fields=['recipe', 'user'],
+                fields=('recipe', 'user'),
                 name='Unique user and recipe in cart',
             ),
-        ]
+        )
+
+    def __str__(self):
+        return f'{self.recipe} in {self.user} cart'
