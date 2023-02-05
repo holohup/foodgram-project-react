@@ -9,7 +9,7 @@ SECRET_KEY = os.getenv(
 
 DEBUG = strtobool(os.getenv('DJANGO_DEBUG_MODE', 'False'))
 
-ALLOWED_HOSTS = ['*', '127.0.0.1']
+ALLOWED_HOSTS = ('ondeletecascade.ru', '130.193.40.244', 'localhost', '127.0.0.1')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -18,13 +18,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
+    'djoser',
+    'rest_framework',
+    'rest_framework.authtoken',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
     'api.apps.ApiConfig',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'django_filters',
-    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -60,8 +60,8 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME', 'postgres'),
-        'USER': os.getenv('PGUSER', 'postgres'),
+        'NAME': os.getenv('POSTGRES_DB', 'postgres'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', '5432'),
@@ -82,7 +82,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 LANGUAGE_CODE = 'en-us'
 
@@ -133,6 +132,6 @@ CACHES = {
     }
 }
 
-HOST_URL = os.getenv('MAIN_HOST', 'http://127.0.0.1')
+HOST_URL = os.getenv('MAIN_HOST', f'http://{ALLOWED_HOSTS[-1]}')
 SHOPPING_CART_FONT = 'DejaVuSans.ttf'
 SHOPPING_CART_BOLD_FONT = 'DejaVuSansCondensed-Bold.ttf'

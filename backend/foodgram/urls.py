@@ -2,11 +2,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework.authtoken.models import TokenProxy
 
-from api.exceptions import custom404
+from api.views import custom404
 
-admin.site.unregister(TokenProxy)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

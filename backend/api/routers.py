@@ -12,6 +12,7 @@ ALLOWED_ROUTE_NAMES = [
     'tags-detail',
     'ingredients-list',
     'ingredients-detail',
+    'recipes-favorite',
     'recipes-list',
     'recipes-detail',
     'recipes-shopping-cart',
@@ -21,6 +22,7 @@ ALLOWED_ROUTE_NAMES = [
 
 
 def route_name_filter(route: URLPattern) -> bool:
+    # print(route.name)
     return route.name in ALLOWED_ROUTE_NAMES
 
 
