@@ -2,6 +2,7 @@ import base64
 import datetime
 
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
@@ -34,6 +35,8 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ('name', 'color', 'slug', 'id')
 
     def to_internal_value(self, data):
+        if not isinstance(data, int):
+            raise ValidationError('Tag must be an integer (id)')
         if not Tag.objects.filter(id=data):
             raise ValidationError(f'Tag {data} not found.')
         return Tag.objects.get(id=data)
@@ -106,6 +109,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, max_length=150)
+
     class Meta:
         model = User
         fields = (
@@ -114,11 +119,19 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
+            'password'
         )
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
 
 class CustomUserSubscriptionsSerializer(CustomUserSerializer):
-    is_subscribed = serializers.BooleanField(default=False)
+    is_subscribed = serializers.BooleanField(default=False, read_only=True)
 
     class Meta:
         model = User
@@ -245,6 +258,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         return data
 
     def validate_ingredients(self, data):
+        if not data:
+            raise ValidationError('Recipe ingredients cannot be empty.')
         errors = []
         for ingredient in data:
             id = ingredient['ingredient']['id']
@@ -290,3 +305,27 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         self._apply_data(recipe)
         return recipe
+
+
+class PasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(
+        max_length=150, write_only=True, required=True
+    )
+    current_password = serializers.CharField(
+        max_length=150, write_only=True, required=True
+    )
+
+    def validate_current_password(self, value):
+        if self.context['request'].user.check_password(value):
+            return value
+        raise ValidationError('Invalid current password.')
+
+    def validate_new_password(self, value):
+        if not validate_password(value):
+            return value
+        raise ValidationError('Could not validate password')
+
+    def validate(self, data):
+        if data['new_password'] == data['current_password']:
+            raise ValidationError('Cannot change password to the same value.')
+        return data

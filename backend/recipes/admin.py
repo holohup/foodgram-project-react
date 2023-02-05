@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.forms import CheckboxSelectMultiple
+from django.db.models.functions import Lower
+from django.forms import BaseInlineFormSet, CheckboxSelectMultiple
 from django.utils.html import format_html
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -10,15 +12,26 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
 admin.site.unregister(Group)
 
 
+class RecipeInlineFormset(BaseInlineFormSet):
+    def clean(self):
+        super(RecipeInlineFormset, self).clean()
+        if all([form.cleaned_data.get('DELETE') for form in self.forms]):
+            raise ValidationError('You cannot delete all ingredients!')
+
+
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 0
     autocomplete_fields = ('ingredient',)
     min_num = 1
+    formset = RecipeInlineFormset
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related('ingredient')
+
+    def has_delete_permission(self, request, obj=None):
+        return obj.ingredients.count() > 1
 
 
 class TagInline(admin.TabularInline):
@@ -31,6 +44,7 @@ class TagInline(admin.TabularInline):
 class TagsAdmin(admin.ModelAdmin):
     list_display = ('name', 'colour', 'slug')
     list_display_links = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
 
     def colour(self, obj):
         return format_html(
@@ -75,6 +89,7 @@ class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     list_display_links = ('name',)
     search_fields = ('name',)
+    ordering = (Lower('name'),)
     list_filter = ('measurement_unit',)
     list_per_page = 200
     list_max_show_all = 5000

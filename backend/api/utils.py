@@ -16,7 +16,7 @@ class ShoppingCartItem(NamedTuple):
 
 
 def get_grocery_list(user: User):
-    recipes = Recipe.objects.filter(shop_cart__user=user)
+    recipes = Recipe.objects.filter(shop_carts__user=user)
     recipe_ingredients = RecipeIngredient.objects.filter(recipe__in=recipes)
     result = {}
     for item in recipe_ingredients:
