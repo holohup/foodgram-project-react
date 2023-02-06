@@ -30,7 +30,7 @@ class Base64ImageField(serializers.ImageField):
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'color', 'slug', 'id')
+        fields = ('id', 'name', 'color', 'slug', )
         model = Tag
         read_only_fields = ('name', 'color', 'slug', 'id')
 
@@ -44,7 +44,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('measurement_unit', 'id', 'name')
+        fields = ('id', 'name', 'measurement_unit')
         model = Ingredient
 
 
