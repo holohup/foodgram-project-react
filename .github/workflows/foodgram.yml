@@ -45,7 +45,7 @@ jobs:
         run: python -m flake8
 
       - name: Unit tests
-        run: cd backend && python manage.py test
+        run: printenv && cd backend && python manage.py test
         env:
           DB_HOST: localhost
 
