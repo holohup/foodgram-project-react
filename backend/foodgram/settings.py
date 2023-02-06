@@ -9,7 +9,13 @@ SECRET_KEY = os.getenv(
 
 DEBUG = strtobool(os.getenv('DJANGO_DEBUG_MODE', 'False'))
 
-ALLOWED_HOSTS = ('ondeletecascade.ru', '130.193.40.244', 'backend', 'localhost', '127.0.0.1')
+ALLOWED_HOSTS = (
+    'ondeletecascade.ru',
+    '130.193.40.244',
+    'backend',
+    'localhost',
+    '127.0.0.1',
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -92,9 +98,15 @@ USE_I18N = True
 USE_L10N = True
 
 STATIC_URL = '/static/django/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/django')
+# STATIC_ROOT =
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+STATIC_ROOT = (
+    os.path.join(BASE_DIR, 'api/static')
+    if DEBUG or strtobool(os.getenv('GITHUB_ACTIONS', 'False'))
+    else os.path.join(BASE_DIR, 'static/django')
+)
 
 AUTH_USER_MODEL = 'users.User'
 
