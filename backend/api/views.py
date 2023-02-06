@@ -18,7 +18,7 @@ from api.serializers import (CustomUserSerializer,
                              PasswordSerializer, RecipeMiniSerializer,
                              RecipeSerializer, SubscriptionSerializer,
                              TagSerializer)
-from api.utils import draw_pdf, get_grocery_list, plain_data_to_cart_items
+from api.utils import draw_pdf, get_grocery_list
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription, User
 
@@ -35,8 +35,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.order_by('id')
     permission_classes = (AllowAny,)
     pagination_class = None
-    filter_backends = (DjangoFilterBackend, SearchFilter,)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ('^name',)
+    # ordering = ('^name',)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -148,7 +149,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def download_shopping_cart(self, request):
-        data = plain_data_to_cart_items(get_grocery_list(request.user))
+        data = get_grocery_list(request.user)
         if not data:
             return Response(
                 'The shopping list is empty', status=status.HTTP_204_NO_CONTENT

@@ -1,8 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from api.utils import (ShoppingCartItem, get_grocery_list,
-                       plain_data_to_cart_items)
+from api.utils import ShoppingCartItem, get_grocery_list
 from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingCart
 
 User = get_user_model()
@@ -64,28 +63,17 @@ class TestShoppingList(TestCase):
         ShoppingCart.objects.create(user=cls.user, recipe=cls.recipe1)
         ShoppingCart.objects.create(user=cls.user, recipe=cls.recipe2)
 
-    def test_grocery_dictionary(self):
-        """Do items from shopping cart exist in correct amounts?
-        Are items not from the shopping cart missing?"""
-
-        result = get_grocery_list(self.user)
-        self.assertIn(('Chicken', 'g.'), result)
-        self.assertIn(('Pumpkin', 'ea'), result)
-        self.assertNotIn(('Salt', 'to taste'), result)
-        self.assertEqual(result[('Chicken', 'g.')], 200)
-        self.assertEqual(result[('Pumpkin', 'ea')], 100)
-
     def test_empty_grocery_list(self):
         """Check for empty dictionary if there're not recipes in list."""
 
         result = get_grocery_list(self.user2)
-        self.assertIsInstance(result, dict)
-        self.assertDictEqual(result, {})
+        self.assertIsInstance(result, list)
+        self.assertListEqual(result, [])
 
     def test_convert_to_human_readable_format(self):
-        """Does plain_data_to_cart_items work as intended?"""
+        """Does get_grocery_list work as intended?"""
 
-        result = plain_data_to_cart_items(get_grocery_list(self.user))
+        result = get_grocery_list(self.user)
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 2)
         self.assertIn(
