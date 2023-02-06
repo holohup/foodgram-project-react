@@ -6,22 +6,21 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from api.pagination import PageLimitPagination
+from api.permissions import IsAuthorOrObjectReadOnly
+from api.serializers import (CustomUserSerializer,
+                             CustomUserSubscriptionsSerializer,
+                             FavoriteSerializer, IngredientSerializer,
+                             PasswordSerializer, RecipeMiniSerializer,
+                             RecipeSerializer, SubscriptionSerializer,
+                             TagSerializer)
 from api.utils import draw_pdf, get_grocery_list, plain_data_to_cart_items
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription, User
-
-from .pagination import PageLimitPagination
-from .permissions import IsAuthorOrObjectReadOnly
-from .search import UnquoteSearchFilter
-from .serializers import (CustomUserSerializer,
-                          CustomUserSubscriptionsSerializer,
-                          FavoriteSerializer, IngredientSerializer,
-                          PasswordSerializer, RecipeMiniSerializer,
-                          RecipeSerializer, SubscriptionSerializer,
-                          TagSerializer)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -31,27 +30,13 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class IngredientViewSet(TagViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
-    queryset = Ingredient.objects.all().order_by('id')
-    filter_backends = (UnquoteSearchFilter, DjangoFilterBackend)
-    search_fields = ('name',)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        search_term = request.query_params.get('name')
-        if not search_term:
-            serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
-
-        data_startswith = self.get_serializer(
-            queryset.filter(name__istartswith=search_term), many=True
-        ).data
-        data_notstartswith = self.get_serializer(
-            queryset.exclude(name__istartswith=search_term), many=True
-        ).data
-
-        return Response(list(data_startswith) + list(data_notstartswith))
+    queryset = Ingredient.objects.order_by('id')
+    permission_classes = (AllowAny,)
+    pagination_class = None
+    filter_backends = (DjangoFilterBackend, SearchFilter,)
+    search_fields = ('^name',)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -109,7 +94,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = User.objects.all().order_by('username')
+        queryset = User.objects.order_by('username')
         if self.request.method != 'GET':
             return queryset
         value = (

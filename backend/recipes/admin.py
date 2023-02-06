@@ -6,8 +6,8 @@ from django.db.models.functions import Lower
 from django.forms import BaseInlineFormSet, CheckboxSelectMultiple
 from django.utils.html import format_html
 
-from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingCart, Tag)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 
 admin.site.unregister(Group)
 
