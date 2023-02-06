@@ -14,8 +14,3 @@ class IsAuthorOrObjectReadOnly(permissions.BasePermission):
             or request.method in ('PATCH', 'DELETE')
             and obj.author == request.user
         )
-
-
-class ReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.method in permissions.SAFE_METHODS

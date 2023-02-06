@@ -110,18 +110,6 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'name',
 }
 
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'HIDE_USERS': False,
-    'PERMISSIONS': {
-        'user_list': ['rest_framework.permissions.AllowAny'],
-        'user': ['api.permissions.ReadOnly'],
-    },
-    'SERIALIZERS': {
-        'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
-    },
-}
-
 DEFAULT_RECIPES_LIMIT = 5
 FAVORITED_CACHE_SECONDS_TTL = 60
 
