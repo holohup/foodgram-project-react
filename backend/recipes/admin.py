@@ -62,7 +62,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'image_display',
     )
     list_filter = ('name', 'tags', 'author')
-    inlines = [RecipeIngredientInline]
+    inlines = (RecipeIngredientInline,)
     formfield_overrides = {
         models.ManyToManyField: {'widget': CheckboxSelectMultiple},
     }

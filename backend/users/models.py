@@ -36,15 +36,15 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = 'Subscription'
         verbose_name_plural = 'Subscriptions'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
-                fields=['author', 'user'], name='Unique subscription'
+                fields=('author', 'user'), name='Unique subscription'
             ),
             models.CheckConstraint(
                 name='Prevent self subscription',
                 check=~models.Q(user=models.F('author')),
             ),
-        ]
+        )
 
     def __str__(self):
         return f'{self.user} subscription on {self.author}'

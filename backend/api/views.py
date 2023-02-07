@@ -11,12 +11,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from api.pagination import PageLimitPagination
-from api.permissions import IsAuthorOrObjectReadOnly
+from api.permissions import (IsAuthorizedOrListCreateOnly,
+                             IsAuthorOrObjectReadOnly)
 from api.serializers import (CustomUserSerializer,
                              CustomUserSubscriptionsSerializer,
                              FavoriteSerializer, IngredientSerializer,
-                             PasswordSerializer, RecipeMiniSerializer,
-                             RecipeSerializer, SubscriptionSerializer,
+                             PasswordSerializer, RecipeSerializer,
+                             ShoppingCartSerializer, SubscriptionSerializer,
                              TagSerializer)
 from api.utils import draw_pdf, get_grocery_list
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
@@ -37,25 +38,14 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
     filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ('^name',)
-    # ordering = ('^name',)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = CustomUserSubscriptionsSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthorizedOrListCreateOnly,)
 
-    @action(
-        ('post', 'delete'), detail=True, permission_classes=(IsAuthenticated,)
-    )
+    @action(('post',), detail=True)
     def subscribe(self, request, pk):
-        if request.method == 'DELETE':
-            subscription = get_object_or_404(
-                Subscription,
-                user=request.user,
-                author=get_object_or_404(User, id=pk),
-            )
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
         context = {
             'user': request.user,
             'author': get_object_or_404(User, id=pk),
@@ -70,7 +60,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, permission_classes=(IsAuthenticated,))
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, pk):
+        subscription = get_object_or_404(
+            Subscription,
+            user=request.user,
+            author=get_object_or_404(User, id=pk),
+        )
+        subscription.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False)
     def subscriptions(self, request):
         paginator = PageLimitPagination()
         qs = Subscription.objects.filter(user=request.user).order_by('-id')
@@ -79,11 +79,11 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionSerializer(page, many=True, context=context)
         return paginator.get_paginated_response(serializer.data)
 
-    @action(detail=False, permission_classes=(IsAuthenticated,))
+    @action(detail=False)
     def me(self, request):
         return Response(self.get_serializer(request.user).data)
 
-    @action(('post',), detail=False, permission_classes=(IsAuthenticated,))
+    @action(('post',), detail=False)
     def set_password(self, request, *args, **kwargs):
         serializer = PasswordSerializer(
             data=request.data, context={'request': request}
@@ -113,37 +113,32 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
 
-class RecipesViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(viewsets.ModelViewSet):
+    shopping_cart_filename = 'ShoppingCart.pdf'
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrObjectReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('author',)
 
-    @action(
-        ('post', 'delete'),
-        detail=True,
-        permission_classes=(IsAuthenticated,),
-    )
+    @action(('post',), detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk):
-        if request.method == "DELETE":
-            qs = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
-            if not qs:
-                return Response(
-                    ('This recipe does not exist in the shopping cart.'),
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        data = {
+            'recipe': get_object_or_404(Recipe, id=pk).id,
+            'user': request.user.id,
+        }
+        serializer = ShoppingCartSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        qs = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
+        if qs.exists():
             qs.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-
-        recipe = get_object_or_404(Recipe, id=pk)
-        _, created = ShoppingCart.objects.get_or_create(
-            user=request.user, recipe=recipe
-        )
-        if created:
-            serializer = RecipeMiniSerializer(instance=recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(
-            ('This recipe is already in the shopping cart.'),
+            'This recipe does not exist in the shopping cart.',
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -158,7 +153,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         response = HttpResponse(buffer, content_type='application/pdf')
         response[
             'Content-Disposition'
-        ] = 'attachment; filename="ShoppingCart.pdf"'
+        ] = f'attachment; filename={self.shopping_cart_filename}'
         return response
 
     @action(('post', 'delete'), detail=True)

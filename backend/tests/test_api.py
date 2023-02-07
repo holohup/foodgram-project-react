@@ -93,7 +93,7 @@ class UnauthorizedUserTests(APITestCase):
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(
                     self.client.post(endpoint, {}, format='json').status_code,
-                    status.HTTP_401_UNAUTHORIZED,
+                    status.HTTP_401_UNAUTHORIZED
                 )
 
     def test_user_registration(self):
@@ -377,10 +377,12 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
 
         user = User.objects.create(email='hello@kitty.com')
         url = reverse('users-detail', kwargs={'pk': 100500})
-        response = self.client.get(url)
+        response = self.user_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         url = reverse('users-detail', kwargs={'pk': user.id})
         response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.user_client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'hello@kitty.com')
         self.assertEqual(len(response.data), 6)

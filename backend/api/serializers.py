@@ -30,7 +30,12 @@ class Base64ImageField(serializers.ImageField):
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('id', 'name', 'color', 'slug', )
+        fields = (
+            'id',
+            'name',
+            'color',
+            'slug',
+        )
         model = Tag
         read_only_fields = ('name', 'color', 'slug', 'id')
 
@@ -71,7 +76,7 @@ class RecipeMiniSerializer(serializers.ModelSerializer):
             'image',
             'cooking_time',
         )
-        read_only_fields = ('id', 'name', 'image', 'cooking_time')
+        read_only_fields = ('name', 'image', 'cooking_time')
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -99,13 +104,13 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'user',
             'recipe',
         )
-        validators = [
+        validators = (
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
-                fields=['user', 'recipe'],
+                fields=('user', 'recipe'),
                 message='You have already favorited this recipe.',
-            )
-        ]
+            ),
+        )
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -119,7 +124,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
-            'password'
+            'password',
         )
 
     def create(self, validated_data):
@@ -172,13 +177,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'author': {'write_only': True},
         }
         model = Subscription
-        validators = [
+        validators = (
             UniqueTogetherValidator(
                 queryset=Subscription.objects.all(),
-                fields=['user', 'author'],
+                fields=('user', 'author'),
                 message='You can only subscribe once.',
-            )
-        ]
+            ),
+        )
 
     def validate_author(self, value):
         if self.context['user'] == value:
@@ -329,3 +334,21 @@ class PasswordSerializer(serializers.Serializer):
         if data['new_password'] == data['current_password']:
             raise ValidationError('Cannot change password to the same value.')
         return data
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('recipe', 'user')
+
+    def validate(self, data):
+        if not ShoppingCart.objects.filter(
+            user=data['user'], recipe=data['recipe']
+        ).exists():
+            return data
+        raise ValidationError('This recipe is already in the shopping cart.')
+
+    def to_representation(self, instance):
+        return RecipeMiniSerializer(instance=instance.recipe).data

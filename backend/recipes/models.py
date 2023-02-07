@@ -88,7 +88,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Recipe'
         verbose_name_plural = 'Recipes'
-        ordering = ['-pub_date']
+        ordering = ('-pub_date', )
 
     def __str__(self):
         return self.name
