@@ -138,3 +138,4 @@ docker-compose_dev.yml
 nr.sh
 backend/media/recipes/*
 dev.sh
+.DS_Store
