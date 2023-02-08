@@ -1,6 +1,6 @@
 import io
 
-from django.db.models import BooleanField, Exists, OuterRef, Value
+from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,6 +10,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from api.filters import RecipeFilter
 from api.pagination import PageLimitPagination
 from api.permissions import (IsAuthorizedOrListCreateOnly,
                              IsAuthorOrObjectReadOnly)
@@ -89,15 +90,12 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             data=request.data, context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        request.user.set_password(serializer.validated_data['new_password'])
-        request.user.save()
+        serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
         user = self.request.user
         queryset = User.objects.order_by('username')
-        if self.request.method != 'GET':
-            return queryset
         value = (
             Value(False, output_field=BooleanField())
             if user.is_anonymous
@@ -118,7 +116,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrObjectReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('author',)
+    filterset_class = RecipeFilter
 
     @action(('post',), detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk):
@@ -126,7 +124,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'recipe': get_object_or_404(Recipe, id=pk).id,
             'user': request.user.id,
         }
-        serializer = ShoppingCartSerializer(data=data)
+        serializer = ShoppingCartSerializer(
+            data=data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -156,48 +156,62 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ] = f'attachment; filename={self.shopping_cart_filename}'
         return response
 
-    @action(('post', 'delete'), detail=True)
+    @action(('post',), detail=True)
     def favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, id=pk)
-        if request.method == 'DELETE':
-            favorite = get_object_or_404(
-                Favorite,
-                user=request.user,
-                recipe=recipe,
-            )
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        get_object_or_404(Recipe, id=pk)
         data = {'user': request.user.id, 'recipe': pk}
-        serializer = FavoriteSerializer(data=data)
+        serializer = FavoriteSerializer(
+            data=data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        get_object_or_404(
+            Favorite,
+            user=request.user,
+            recipe=get_object_or_404(Recipe, id=pk),
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
         return serializer.save(author=self.request.user)
 
     def get_queryset(self):
         user = self.request.user
+        if user.is_authenticated:
+            favorited_value = Exists(
+                Favorite.objects.filter(user=user, recipe=OuterRef('id'))
+            )
+            shop_cart_value = Exists(
+                ShoppingCart.objects.filter(user=user, recipe=OuterRef('id'))
+            )
+            is_subscribed_value = Exists(
+                Subscription.objects.filter(user=user, author=OuterRef('id'))
+            )
+        else:
+            favorited_value = shop_cart_value = is_subscribed_value = Value(
+                False, output_field=BooleanField()
+            )
+
         queryset = (
             Recipe.objects.all()
             .order_by('-pub_date')
-            .select_related('author')
-            .prefetch_related('tags', 'ingredients', 'favorite')
+            .prefetch_related('tags', 'ingredients', 'favorites')
+            .prefetch_related(
+                Prefetch(
+                    'author',
+                    User.objects.annotate(is_subscribed=is_subscribed_value),
+                ),
+            )
         )
 
-        if self.action != 'list':
-            return queryset
-        params = self.request.query_params
-        tags = params.getlist('tags')
-        if tags:
-            queryset = queryset.filter(tags__slug__in=tags).distinct()
-        if user.is_anonymous:
-            return queryset
-        if params.get('is_favorited') == '1':
-            queryset = queryset.filter(favorite__user=user)
-        if params.get('is_in_shopping_cart') == '1':
-            queryset = queryset.filter(shop_carts__user=user)
-        return queryset
+        return queryset.annotate(
+            is_favorited=favorited_value,
+            is_in_shopping_cart=shop_cart_value,
+        )
 
 
 def custom404(request, exception=None):

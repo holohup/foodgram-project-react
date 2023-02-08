@@ -2,7 +2,6 @@ import shutil
 import tempfile
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -11,9 +10,8 @@ from rest_framework.test import APIClient, APITestCase, override_settings
 from api.urls import router
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
-from users.models import Subscription
+from users.models import Subscription, User
 
-User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
@@ -93,7 +91,7 @@ class UnauthorizedUserTests(APITestCase):
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(
                     self.client.post(endpoint, {}, format='json').status_code,
-                    status.HTTP_401_UNAUTHORIZED
+                    status.HTTP_401_UNAUTHORIZED,
                 )
 
     def test_user_registration(self):
@@ -448,7 +446,7 @@ class UsersEndpointTests(AuthorizedUserAuthorPresets):
         self.assertTrue(self.user.check_password(creds['new_password']))
 
 
-class ShoppingCardEndpointsTests(APITestCase):
+class ShoppingCartEndpointsTests(APITestCase):
     """Tests for shopping cart endpoints."""
 
     @classmethod
@@ -598,6 +596,9 @@ class RecipesEndpointsTests(APITestCase):
         cls.author_client, cls.user_client = APIClient(), APIClient()
         cls.author_client.force_authenticate(cls.author)
         cls.user_client.force_authenticate(cls.user)
+        cls.recipe = Recipe.objects.create(
+            cooking_time=15, author=cls.author, image='1.jpg'
+        )
         super().setUpClass()
 
     @classmethod
@@ -811,6 +812,25 @@ class RecipesEndpointsTests(APITestCase):
         self.assertEqual(Recipe.objects.filter(id=recipe.id).count(), 0)
         response = self.author_client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_is_subscribed_in_recipes_list(self):
+        """Tests if the is_subscribed author field works correctly."""
+
+        response = self.user_client.get(
+            reverse('recipes-list'), args={'limit': 100}
+        )
+        for recipe in response.data['results']:
+            if recipe['author']['id'] == self.author.id:
+                break
+        self.assertFalse(recipe['author']['is_subscribed'])
+        Subscription.objects.create(user=self.user, author=self.author)
+        response = self.user_client.get(
+            reverse('recipes-list'), args={'limit': 100}
+        )
+        for recipe in response.data['results']:
+            if recipe['author']['id'] == self.author.id:
+                break
+        self.assertTrue(recipe['author']['is_subscribed'])
 
 
 class FavoriteEndpointsTests(APITestCase):

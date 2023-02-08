@@ -14,23 +14,6 @@ class ShoppingCartItem(NamedTuple):
     amount: int
 
 
-def get_grocery_list(user: User) -> List[ShoppingCartItem]:
-
-    recipe_ingredients = (
-        RecipeIngredient.objects.filter(recipe__shop_carts__user=user)
-        .values('ingredient__name', 'ingredient__measurement_unit')
-        .annotate(amount=Sum('amount'))
-    )
-    return [
-        ShoppingCartItem(
-            item['ingredient__name'],
-            item['ingredient__measurement_unit'],
-            item['amount'],
-        )
-        for item in recipe_ingredients
-    ]
-
-
 class ShoppingCartPDF:
     """Class for a shopping cart PDF with public methods."""
 
@@ -54,6 +37,9 @@ class ShoppingCartPDF:
         self.n_cell_w = n_cell_w or pdf_epw * self.default_n_cell_w_ratio
         self.cell_w = (pdf_epw - self.n_cell_w) * self.default_cell_w_ratio
         self._render_table_header()
+
+    def __repr__(self) -> str:
+        return 'Shopping cart PDF'
 
     def _set_up_pdf(self) -> FPDF:
         self.pdf = FPDF(format=self.default_format)
@@ -109,8 +95,22 @@ class ShoppingCartPDF:
     def output(self) -> str:
         return self.pdf.output(dest='S')
 
-    def __repr__(self) -> str:
-        return 'Shopping cart PDF'
+
+def get_grocery_list(user: User) -> List[ShoppingCartItem]:
+
+    recipe_ingredients = (
+        RecipeIngredient.objects.filter(recipe__shop_carts__user=user)
+        .values('ingredient__name', 'ingredient__measurement_unit')
+        .annotate(amount=Sum('amount'))
+    )
+    return [
+        ShoppingCartItem(
+            item['ingredient__name'],
+            item['ingredient__measurement_unit'],
+            item['amount'],
+        )
+        for item in recipe_ingredients
+    ]
 
 
 def draw_pdf(data: List[ShoppingCartItem]) -> str:

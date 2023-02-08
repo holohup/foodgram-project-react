@@ -97,11 +97,9 @@ USE_I18N = True
 
 USE_L10N = True
 
-STATIC_URL = '/static/django/'
-# STATIC_ROOT =
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+STATIC_URL = '/static/django/'
 STATIC_ROOT = (
     os.path.join(BASE_DIR, 'api/static')
     if DEBUG or strtobool(os.getenv('GITHUB_ACTIONS', 'False'))
@@ -111,12 +109,15 @@ STATIC_ROOT = (
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
+    'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication'
-    ],
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'api.pagination.PageLimitPagination',
     'PAGE_SIZE': 5,
     'SEARCH_PARAM': 'name',
