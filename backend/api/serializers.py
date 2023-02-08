@@ -268,7 +268,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             id_ = ingredient['id']
             if not Ingredient.objects.filter(id=id_).exists():
                 raise ValidationError({'Ingredient not found': id})
-            if ingredient['amount'] <= 0:
+            if int(ingredient['amount']) <= 0:
                 raise ValidationError(
                     {'Amount of an Ingredient should be positive.': id_}
                 )
