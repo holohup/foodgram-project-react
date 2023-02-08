@@ -741,6 +741,25 @@ class RecipesEndpointsTests(APITestCase):
         self.assertEqual(
             response.data['results'][0]['is_in_shopping_cart'], True
         )
+        recipe = Recipe.objects.create(
+            author=self.user, cooking_time=10, image='11.jpg'
+        )
+        response = self.user_client.get(
+            reverse('recipes-list') + f'?author={self.user.id}'
+        )
+        self.assertEqual(response.data['count'], 1)
+        recipe.delete()
+        response = self.user_client.get(
+            reverse('recipes-list') + f'?author={self.user.id}'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.user_client.get(
+            reverse('recipes-list') + f'?author={self.author.id}'
+        )
+        self.assertEqual(
+            response.data['count'],
+            Recipe.objects.filter(author=self.author).count(),
+        )
 
     def test_recipes_update(self):
         """Test if update works correctly."""
