@@ -14,9 +14,9 @@ admin.site.unregister(Group)
 
 class RecipeInlineFormset(BaseInlineFormSet):
     def clean(self):
-        super(RecipeInlineFormset, self).clean()
         if all([form.cleaned_data.get('DELETE') for form in self.forms]):
             raise ValidationError('You cannot delete all ingredients!')
+        super().clean()
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -62,7 +62,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'image_display',
     )
     list_filter = ('name', 'tags', 'author')
-    inlines = [RecipeIngredientInline]
+    inlines = (RecipeIngredientInline,)
     formfield_overrides = {
         models.ManyToManyField: {'widget': CheckboxSelectMultiple},
     }

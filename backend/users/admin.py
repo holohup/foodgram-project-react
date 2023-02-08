@@ -30,7 +30,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('email', 'username')
     list_display = ('email', 'username', 'is_active')
     list_editable = ('is_active',)
-    inlines = [SubscriptionInline, FavoriteInline, ShoppingCartInline]
+    inlines = (SubscriptionInline, FavoriteInline, ShoppingCartInline)
     fieldsets = (
         ('Account', {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
