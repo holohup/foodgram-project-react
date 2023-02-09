@@ -97,17 +97,13 @@ class CustomUserViewSet(CustomModelViewsSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
-        """Queryset for the serializer."""
+        """Annotated queryset for the serializer."""
 
         user = self.request.user
         queryset = User.objects.order_by('username')
-        value = (
-            Value(False, output_field=BooleanField())
-            if user.is_anonymous
-            else Exists(Subscription.objects.filter(
-                user=user, author=OuterRef('id')
-            ))
-        )
+        value = Exists(Subscription.objects.filter(
+            user_id=user.id or None, author=OuterRef('id')
+        ))
         return queryset.annotate(is_subscribed=value)
 
     def get_serializer_class(self):
@@ -177,32 +173,26 @@ class RecipeViewSet(CustomModelViewsSet):
         """Recipes queryset for the serializer."""
 
         user = self.request.user
-        if user.is_authenticated:
-            favorited_value = Exists(
-                Favorite.objects.filter(user=user, recipe=OuterRef('id'))
-            )
-            shop_cart_value = Exists(
-                ShoppingCart.objects.filter(user=user, recipe=OuterRef('id'))
-            )
-            is_subscribed_value = Exists(
-                Subscription.objects.filter(user=user, author=OuterRef('id'))
-            )
-        else:
-            favorited_value = shop_cart_value = is_subscribed_value = Value(
-                False, output_field=BooleanField()
-            )
-
-        queryset = (
-            Recipe.objects.all().order_by('-pub_date').prefetch_related(
-                'tags',
-                'favorites',
-                'recipeingredients__ingredient'
-            ).prefetch_related(Prefetch(
-                'author',
-                User.objects.annotate(is_subscribed=is_subscribed_value),
-            ),
-            )
+        favorited_value = Exists(Favorite.objects.filter(
+            user_id=user.id or None, recipe=OuterRef('id'))
         )
+        shop_cart_value = Exists(ShoppingCart.objects.filter(
+            user_id=user.id or None, recipe=OuterRef('id'))
+        )
+        is_subscribed_value = Exists(Subscription.objects.filter(
+            user_id=user.id or None, author=OuterRef('id'))
+        )
+
+        queryset = (Recipe.objects.all().order_by(
+            '-pub_date'
+        ).prefetch_related(
+            'tags',
+            'favorites',
+            'recipeingredients__ingredient'
+        ).prefetch_related(Prefetch(
+            'author',
+            User.objects.annotate(is_subscribed=is_subscribed_value),
+        )))
 
         return queryset.annotate(
             is_favorited=favorited_value,

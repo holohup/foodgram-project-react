@@ -224,11 +224,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             self.context['request'].query_params.get('recipes_limit')
             or settings.DEFAULT_RECIPES_LIMIT
         )
+        qs = subscription.author.recipes
         serializer = RecipeMiniSerializer(
             many=True,
-            instance=subscription.author.recipes.order_by(
-                '-pub_date'
-            )[:recipes_limit],
+            instance=qs.order_by('-pub_date')[:recipes_limit],
             context=self.context,
         )
         return serializer.data
@@ -316,13 +315,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         """Extra fields processing."""
 
         recipe.tags.set(self._tags)
-        recipe_ingredients = [
-            RecipeIngredient(
-                ingredient_id=ingredient['id'],
-                recipe=recipe,
-                amount=ingredient['amount'],
-            )
-            for ingredient in self._ingredients
+        recipe_ingredients = [RecipeIngredient(
+            ingredient_id=ingredient['id'],
+            recipe=recipe,
+            amount=ingredient['amount'],
+        ) for ingredient in self._ingredients
         ]
         with transaction.atomic():
             recipe.recipeingredients.all().delete()

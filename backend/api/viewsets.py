@@ -31,11 +31,9 @@ class CustomModelViewsSet(ModelViewSet):
     def generic_delete(self, klass, outer_klass, outer_field):
         """Generic delete for an authenticated user."""
 
-        g_o_404_args = {
+        obj = get_object_or_404(klass, **{
             'user': self.request.user,
-            outer_field: get_object_or_404(outer_klass, id=self.kwargs['pk'])
-        }
-        obj = get_object_or_404(klass, **g_o_404_args)
-
+            outer_field: get_object_or_404(outer_klass, id=self.kwargs['pk']),
+        })
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
