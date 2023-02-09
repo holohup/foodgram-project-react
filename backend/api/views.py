@@ -3,9 +3,8 @@ import io
 from django.db.models import (BooleanField, Count, Exists, OuterRef, Prefetch,
                               Value)
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
@@ -22,7 +21,7 @@ from api.serializers import (CustomUserSerializer,
                              ShoppingCartSerializer, SubscriptionSerializer,
                              TagSerializer)
 from api.utils import draw_pdf, get_grocery_list
-from api.viewsets import CustomReadOnlyModelViewSet
+from api.viewsets import CustomModelViewsSet, CustomReadOnlyModelViewSet
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription, User
 
@@ -43,7 +42,7 @@ class IngredientViewSet(CustomReadOnlyModelViewSet):
     search_fields = ('^name',)
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
+class CustomUserViewSet(CustomModelViewsSet):
     """Viewset for users."""
 
     serializer_class = CustomUserSubscriptionsSerializer
@@ -54,28 +53,13 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, pk):
         """Subscription creation."""
 
-        data = {
-            'user': request.user.id,
-            'author': get_object_or_404(User, id=pk).id,
-        }
-        serializer = SubscriptionSerializer(
-            data=data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.generic_create(SubscriptionSerializer, User, 'author')
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, pk):
         """Subscription deletion."""
 
-        subscription = get_object_or_404(
-            Subscription,
-            user=request.user,
-            author=get_object_or_404(User, id=pk),
-        )
-        subscription.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self.generic_delete(Subscription, User, 'author')
 
     @action(detail=False)
     def subscriptions(self, request):
@@ -134,7 +118,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(CustomModelViewsSet):
     """Viewset for recipes."""
 
     shopping_cart_filename = 'ShoppingCart.pdf'
@@ -148,29 +132,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk):
         """Add a recipe to the shopping cart."""
 
-        data = {
-            'recipe': get_object_or_404(Recipe, id=pk).id,
-            'user': request.user.id,
-        }
-        serializer = ShoppingCartSerializer(
-            data=data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.generic_create(ShoppingCartSerializer, Recipe, 'recipe')
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
         """Delete a recipe from the shopping cart."""
 
-        qs = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
-        if qs.exists():
-            qs.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            'This recipe does not exist in the shopping cart.',
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return self.generic_delete(ShoppingCart, Recipe, 'recipe')
 
     @action(detail=False)
     def download_shopping_cart(self, request):
@@ -192,25 +160,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk):
         """Add a recipe to favorites."""
 
-        get_object_or_404(Recipe, id=pk)
-        data = {'user': request.user.id, 'recipe': pk}
-        serializer = FavoriteSerializer(
-            data=data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return self.generic_create(FavoriteSerializer, Recipe, 'recipe')
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
         """Delete from favorites."""
 
-        get_object_or_404(
-            Favorite,
-            user=request.user,
-            recipe=get_object_or_404(Recipe, id=pk),
-        ).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self.generic_delete(Favorite, Recipe, 'recipe')
 
     def perform_create(self, serializer):
         """Create a recipe."""
@@ -241,11 +197,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'tags',
                 'favorites',
                 'recipeingredients__ingredient'
-            ).prefetch_related(
-                Prefetch(
-                    'author',
-                    User.objects.annotate(is_subscribed=is_subscribed_value),
-                ),
+            ).prefetch_related(Prefetch(
+                'author',
+                User.objects.annotate(is_subscribed=is_subscribed_value),
+            ),
             )
         )
 
