@@ -13,6 +13,8 @@ admin.site.unregister(Group)
 
 
 class RecipeInlineFormset(BaseInlineFormSet):
+    """Formset to prevent all ingrediets deletion."""
+
     def clean(self):
         if all([form.cleaned_data.get('DELETE') for form in self.forms]):
             raise ValidationError('You cannot delete all ingredients!')
@@ -20,6 +22,8 @@ class RecipeInlineFormset(BaseInlineFormSet):
 
 
 class RecipeIngredientInline(admin.TabularInline):
+    """Inline for recipe ingredients."""
+
     model = RecipeIngredient
     extra = 0
     autocomplete_fields = ('ingredient',)
@@ -27,26 +31,42 @@ class RecipeIngredientInline(admin.TabularInline):
     formset = RecipeInlineFormset
 
     def get_queryset(self, request):
+        """Select_related to optimize db usage."""
+
         qs = super().get_queryset(request)
-        return qs.select_related('ingredient')
+        return qs.select_related('ingredient', 'recipe')
 
     def has_delete_permission(self, request, obj=None):
+        """No deletion checkbox if there's only 1 recipe ingredient left."""
+
         return obj.ingredients.count() > 1
 
 
 class TagInline(admin.TabularInline):
+    """Inline for tags."""
+
     model = Recipe.tags.through
     min_num = 1
     extra = 0
 
+    def get_queryset(self, request):
+        """Prefetch recipes for optimized db queries."""
+
+        qs = super().get_queryset(request)
+        return qs.prefetch_related('recipes')
+
 
 @admin.register(Tag)
 class TagsAdmin(admin.ModelAdmin):
+    """Tags admin interface."""
+
     list_display = ('name', 'colour', 'slug')
     list_display_links = ('name',)
     prepopulated_fields = {'slug': ('name',)}
 
     def colour(self, obj):
+        """Colored color codes for fun."""
+
         return format_html(
             f'<span style="color: {obj.color};">{obj.color}</span>'
         )
@@ -54,6 +74,8 @@ class TagsAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    """Admin interface for recipes."""
+
     readonly_fields = ('times_favorited',)
     list_display = (
         'name',
@@ -68,9 +90,13 @@ class RecipeAdmin(admin.ModelAdmin):
     }
 
     def recipe_tags(self, obj):
+        """Recipes tags for recipe list."""
+
         return [tag.name for tag in obj.tags.all()]
 
     def times_favorited(self, obj):
+        """Times favorited field for recipe list."""
+
         return obj.favorited
 
     def get_fields(self, request, obj=None, **kwargs):
@@ -80,12 +106,16 @@ class RecipeAdmin(admin.ModelAdmin):
         return [fields[-1]] + fields[:-1]
 
     def get_queryset(self, request):
+        """Prefetching related to optimize db usage."""
+
         qs = super().get_queryset(request)
-        return qs.prefetch_related('tags')
+        return qs.prefetch_related('tags', 'ingredients')
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
+    """Admin interface for ingredients."""
+
     list_display = ('name', 'measurement_unit')
     list_display_links = ('name',)
     search_fields = ('name',)
@@ -97,17 +127,20 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ('user', 'recipe')
+    """Admin interface for favorites."""
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('user', 'recipe')
+    list_display = ('user', 'recipe')
+    list_select_related = True
 
 
 @admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
+    """Admin interface for the shopping cart."""
+
     list_display = ('user', 'recipe')
 
     def get_queryset(self, request):
+        """Queries optimization."""
+
         qs = super().get_queryset(request)
         return qs.select_related('recipe', 'user')

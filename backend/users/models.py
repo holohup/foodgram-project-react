@@ -3,6 +3,8 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Custom User model."""
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
@@ -20,6 +22,8 @@ class User(AbstractUser):
 
 
 class Subscription(models.Model):
+    """Subscription model."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

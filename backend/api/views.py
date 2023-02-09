@@ -1,13 +1,14 @@
 import io
 
-from django.db.models import BooleanField, Exists, OuterRef, Prefetch, Value
+from django.db.models import (BooleanField, Count, Exists, OuterRef, Prefetch,
+                              Value)
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.filters import RecipeFilter
@@ -21,48 +22,53 @@ from api.serializers import (CustomUserSerializer,
                              ShoppingCartSerializer, SubscriptionSerializer,
                              TagSerializer)
 from api.utils import draw_pdf, get_grocery_list
+from api.viewsets import CustomReadOnlyModelViewSet
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Subscription, User
 
 
-class TagViewSet(viewsets.ReadOnlyModelViewSet):
+class TagViewSet(CustomReadOnlyModelViewSet):
+    """Viewset for tags."""
+
     serializer_class = TagSerializer
     queryset = Tag.objects.all()
-    permission_classes = (AllowAny,)
-    pagination_class = None
 
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+class IngredientViewSet(CustomReadOnlyModelViewSet):
+    """Viewset for ingredients."""
+
     serializer_class = IngredientSerializer
     queryset = Ingredient.objects.order_by('id')
-    permission_classes = (AllowAny,)
-    pagination_class = None
     filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ('^name',)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
+    """Viewset for users."""
+
     serializer_class = CustomUserSubscriptionsSerializer
     permission_classes = (IsAuthorizedOrListCreateOnly,)
+    http_method_names = ('get', 'post', 'delete')
 
     @action(('post',), detail=True)
     def subscribe(self, request, pk):
-        context = {
-            'user': request.user,
-            'author': get_object_or_404(User, id=pk),
-            'request': request,
-        }
+        """Subscription creation."""
+
         data = {
-            'user': context['user'].id,
-            'author': context['author'].id,
+            'user': request.user.id,
+            'author': get_object_or_404(User, id=pk).id,
         }
-        serializer = SubscriptionSerializer(data=data, context=context)
+        serializer = SubscriptionSerializer(
+            data=data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, pk):
+        """Subscription deletion."""
+
         subscription = get_object_or_404(
             Subscription,
             user=request.user,
@@ -73,8 +79,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def subscriptions(self, request):
+        """Subscriptions list."""
+
         paginator = PageLimitPagination()
-        qs = Subscription.objects.filter(user=request.user).order_by('-id')
+        qs = (
+            request.user.follower.annotate(
+                is_subscribed=Value(True, output_field=BooleanField())
+            )
+            .prefetch_related('author__recipes')
+            .annotate(recipes_count=Count('author__recipes'))
+            .order_by('-id')
+        )
         page = paginator.paginate_queryset(qs, request=request)
         context = {'user': request.user, 'request': request}
         serializer = SubscriptionSerializer(page, many=True, context=context)
@@ -82,10 +97,14 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def me(self, request):
+        """Authenticated used info."""
+
         return Response(self.get_serializer(request.user).data)
 
     @action(('post',), detail=False)
     def set_password(self, request, *args, **kwargs):
+        """Set a new password."""
+
         serializer = PasswordSerializer(
             data=request.data, context={'request': request}
         )
@@ -94,6 +113,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
+        """Queryset for the serializer."""
+
         user = self.request.user
         queryset = User.objects.order_by('username')
         value = (
@@ -106,20 +127,27 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return queryset.annotate(is_subscribed=value)
 
     def get_serializer_class(self):
+        """Return a serializer without the is_subscribed field upon reg."""
+
         if self.action == 'create':
             return CustomUserSerializer
         return super().get_serializer_class()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """Viewset for recipes."""
+
     shopping_cart_filename = 'ShoppingCart.pdf'
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrObjectReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+    http_method_names = ('get', 'post', 'patch', 'delete')
 
     @action(('post',), detail=True, permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk):
+        """Add a recipe to the shopping cart."""
+
         data = {
             'recipe': get_object_or_404(Recipe, id=pk).id,
             'user': request.user.id,
@@ -133,6 +161,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
+        """Delete a recipe from the shopping cart."""
+
         qs = ShoppingCart.objects.filter(user=request.user, recipe__id=pk)
         if qs.exists():
             qs.delete()
@@ -144,6 +174,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def download_shopping_cart(self, request):
+        """Download shopping cart in a PDF format."""
+
         data = get_grocery_list(request.user)
         if not data:
             return Response(
@@ -158,6 +190,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(('post',), detail=True)
     def favorite(self, request, pk):
+        """Add a recipe to favorites."""
+
         get_object_or_404(Recipe, id=pk)
         data = {'user': request.user.id, 'recipe': pk}
         serializer = FavoriteSerializer(
@@ -169,6 +203,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
+        """Delete from favorites."""
+
         get_object_or_404(
             Favorite,
             user=request.user,
@@ -177,9 +213,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
+        """Create a recipe."""
+
         return serializer.save(author=self.request.user)
 
     def get_queryset(self):
+        """Recipes queryset for the serializer."""
+
         user = self.request.user
         if user.is_authenticated:
             favorited_value = Exists(
@@ -199,7 +239,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         queryset = (
             Recipe.objects.all()
             .order_by('-pub_date')
-            .prefetch_related('tags', 'ingredients', 'favorites')
+            .prefetch_related(
+                'tags', 'favorites', 'recipeingredients__ingredient'
+            )
             .prefetch_related(
                 Prefetch(
                     'author',
@@ -215,6 +257,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 def custom404(request, exception=None):
+    """Custom 404 response."""
+
     return JsonResponse(
         {'error': 'The resource was not found'},
         status=status.HTTP_404_NOT_FOUND,

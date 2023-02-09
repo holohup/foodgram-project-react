@@ -7,23 +7,31 @@ from users.models import Subscription, User
 
 
 class SubscriptionInline(admin.TabularInline):
+    """Inline for subscriptions."""
+
     model = Subscription
     extra = 0
     fk_name = 'user'
 
 
 class FavoriteInline(admin.TabularInline):
+    """Inline for favorites."""
+
     model = Favorite
     extra = 0
 
 
 class ShoppingCartInline(admin.TabularInline):
+    """Inline for shopping cart."""
+
     model = ShoppingCart
     extra = 0
 
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
+    """"Admin interface for the custom User."""
+
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     list_display_links = ('username',)
@@ -40,6 +48,8 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    """Admin interface for subscriptions."""
+
     list_filter = ('author', 'user')
     list_display = (
         'id',
@@ -47,7 +57,3 @@ class SubscriptionAdmin(admin.ModelAdmin):
         'author',
     )
     search_fields = ('author__username', 'user__username')
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('author', 'user')
