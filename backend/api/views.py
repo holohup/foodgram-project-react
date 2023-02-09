@@ -82,13 +82,13 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         """Subscriptions list."""
 
         paginator = PageLimitPagination()
-        qs = (
-            request.user.follower.annotate(
-                is_subscribed=Value(True, output_field=BooleanField())
-            )
-            .prefetch_related('author__recipes')
-            .annotate(recipes_count=Count('author__recipes'))
-            .order_by('-id')
+        qs = (request.user.follower.annotate(is_subscribed=Value(
+            True, output_field=BooleanField()
+        )).prefetch_related(
+            'author__recipes'
+        ).annotate(recipes_count=Count(
+            'author__recipes'
+        )).order_by('-id')
         )
         page = paginator.paginate_queryset(qs, request=request)
         context = {'user': request.user, 'request': request}
@@ -120,9 +120,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         value = (
             Value(False, output_field=BooleanField())
             if user.is_anonymous
-            else Exists(
-                Subscription.objects.filter(user=user, author=OuterRef('id'))
-            )
+            else Exists(Subscription.objects.filter(
+                user=user, author=OuterRef('id')
+            ))
         )
         return queryset.annotate(is_subscribed=value)
 
@@ -237,12 +237,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
         queryset = (
-            Recipe.objects.all()
-            .order_by('-pub_date')
-            .prefetch_related(
-                'tags', 'favorites', 'recipeingredients__ingredient'
-            )
-            .prefetch_related(
+            Recipe.objects.all().order_by('-pub_date').prefetch_related(
+                'tags',
+                'favorites',
+                'recipeingredients__ingredient'
+            ).prefetch_related(
                 Prefetch(
                     'author',
                     User.objects.annotate(is_subscribed=is_subscribed_value),

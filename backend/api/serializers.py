@@ -115,13 +115,11 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'user',
             'recipe',
         )
-        validators = (
-            UniqueTogetherValidator(
-                queryset=Favorite.objects.all(),
-                fields=('user', 'recipe'),
-                message='You have already favorited this recipe.',
-            ),
-        )
+        validators = (UniqueTogetherValidator(
+            queryset=Favorite.objects.all(),
+            fields=('user', 'recipe'),
+            message='You have already favorited this recipe.',
+        ),)
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -197,13 +195,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'author': {'write_only': True},
         }
         model = Subscription
-        validators = (
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=('user', 'author'),
-                message='You can only subscribe once.',
-            ),
-        )
+        validators = (UniqueTogetherValidator(
+            queryset=Subscription.objects.all(),
+            fields=('user', 'author'),
+            message='You can only subscribe once.',
+        ),)
 
     def to_representation(self, instance):
         """Return correct unannotated fields upon subscription."""
