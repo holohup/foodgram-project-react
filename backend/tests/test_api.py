@@ -693,7 +693,7 @@ class RecipesEndpointsTests(APITestCase):
                 self.assertIsInstance(response.data[field], inst)
         url = reverse('recipes-detail', kwargs={'pk': response.data['id']})
         response = self.author_client.put(url, recipe_presets, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         response = self.user_client.delete(url, recipe_presets, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 

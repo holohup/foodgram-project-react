@@ -8,6 +8,7 @@ from users.models import User
 
 
 class Tag(models.Model):
+    """Tag model."""
 
     name = models.CharField(
         max_length=200, verbose_name='Tag name', unique=True
@@ -35,6 +36,8 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
+    """Ingredient model."""
+
     name = models.CharField(
         max_length=250,
         verbose_name='Ingredient name',
@@ -58,6 +61,7 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
+    """Recipe model."""
 
     author = models.ForeignKey(
         User,
@@ -94,10 +98,14 @@ class Recipe(models.Model):
         return self.name
 
     def image_display(self):
+        """Small image thumbnail for admin zone."""
+
         return mark_safe(f'<img src="{self.image.url}" width="150" />')
 
     @property
     def favorited(self):
+        """Times the recipe has been favorited propery, cached."""
+
         favorited = cache.get(f'{self.id}_favorited')
         if favorited is None:
             favorited = Favorite.objects.filter(recipe=self).count()
@@ -110,6 +118,8 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
+    """RecipeIngredient model."""
+
     recipe = models.ForeignKey(
         Recipe, related_name='recipeingredients', on_delete=models.CASCADE
     )
@@ -136,6 +146,8 @@ class RecipeIngredient(models.Model):
 
 
 class Favorite(models.Model):
+    """Favorite model."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -163,6 +175,8 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
+    """Shopping cart model."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

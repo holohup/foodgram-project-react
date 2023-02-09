@@ -30,6 +30,8 @@ class ShoppingCartPDF:
     title_cell_size = 200
 
     def __init__(self, cell_h=None, n_cell_w=None, font_size=8) -> None:
+        """Initialization and setup."""
+
         self.font_size = font_size
         self.pdf = self._set_up_pdf()
         pdf_epw = self.pdf.epw
@@ -39,9 +41,13 @@ class ShoppingCartPDF:
         self._render_table_header()
 
     def __repr__(self) -> str:
+        """How a class object will be displayed."""
+
         return 'Shopping cart PDF'
 
     def _set_up_pdf(self) -> FPDF:
+        """Setting up the pdf file."""
+
         self.pdf = FPDF(format=self.default_format)
         self.pdf.add_page()
         self.pdf.add_font(
@@ -67,6 +73,8 @@ class ShoppingCartPDF:
         return self.pdf
 
     def _render_table_header(self):
+        """Rendering the table header."""
+
         self.pdf.ln(self.cell_h)
         col_names = ('Amount', 'Units', 'Bought')
         self.pdf.set_font('Bold', size=self.font_size)
@@ -77,6 +85,8 @@ class ShoppingCartPDF:
             )
 
     def add_item(self, item: ShoppingCartItem):
+        """Add an item to the table."""
+
         if self.pdf.will_page_break(self.cell_h * self.page_break_threshold):
             self.pdf.ln(self.cell_h)
             self._render_table_header()
@@ -97,6 +107,7 @@ class ShoppingCartPDF:
 
 
 def get_grocery_list(user: User) -> List[ShoppingCartItem]:
+    """Get user's grocery list in a human-readable form."""
 
     recipe_ingredients = (
         RecipeIngredient.objects.filter(recipe__shop_carts__user=user)
@@ -114,6 +125,7 @@ def get_grocery_list(user: User) -> List[ShoppingCartItem]:
 
 
 def draw_pdf(data: List[ShoppingCartItem]) -> str:
+    """Create a pdf and return it as a string."""
 
     pdf = ShoppingCartPDF(font_size=10)
     for item in data:

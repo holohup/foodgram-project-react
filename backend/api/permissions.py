@@ -2,6 +2,8 @@ from rest_framework import permissions
 
 
 class IsAuthorOrObjectReadOnly(permissions.BasePermission):
+    """Special permissions for object author."""
+
     def has_permission(self, request, view):
         return (
             request.method in permissions.SAFE_METHODS
@@ -17,6 +19,8 @@ class IsAuthorOrObjectReadOnly(permissions.BasePermission):
 
 
 class IsAuthorizedOrListCreateOnly(permissions.BasePermission):
+    """Special permission for author-only actions."""
+
     def has_permission(self, request, view):
         return (
             view.action in ('list', 'create') or request.user.is_authenticated
