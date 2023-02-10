@@ -2,12 +2,8 @@ from django.urls import include, path
 from djoser.views import UserViewSet
 from rest_framework.routers import DefaultRouter
 
-from api.views import (
-    CustomUserViewSet,
-    IngredientViewSet,
-    RecipeViewSet,
-    TagViewSet,
-)
+from api.views import (CustomUserViewSet, IngredientViewSet, RecipeViewSet,
+                       TagViewSet)
 
 router = DefaultRouter()
 
@@ -24,9 +20,6 @@ djoser_urlpatterns = [
         name='users-set-password',
     ),
     path('users/me/', UserViewSet.as_view({'get': 'me'}), name='users-me'),
-    # path(
-    #     'users/', UserViewSet.as_view({'post': 'create'}),
-    # ),
 ]
 
 urlpatterns = [

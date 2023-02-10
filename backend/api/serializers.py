@@ -120,20 +120,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
             message='You have already favorited this recipe.',
         ),)
 
-# from djoser.serializers import UserCreateSerializer
-# class CreateUserSerializer(UserCreateSerializer):
-#     password = serializers.CharField(write_only=True, max_length=150)
-#     class Meta:
-#         model = User
-#         fields = (
-#             'email',
-#             'id',
-#             'username',
-#             'first_name',
-#             'last_name',
-#             'password',
-#         )
-
 
 class CustomUserSerializer(serializers.ModelSerializer):
     """Serializer for the custom User model."""
