@@ -75,7 +75,7 @@ class CustomUserViewSet(CustomModelViewsSet):
         )).order_by('-id')
         )
         page = paginator.paginate_queryset(qs, request=request)
-        context = {'user': request.user, 'request': request}
+        context = {'request': request}
         serializer = SubscriptionSerializer(page, many=True, context=context)
         return paginator.get_paginated_response(serializer.data)
 
