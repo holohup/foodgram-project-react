@@ -2,7 +2,6 @@ import base64
 import datetime
 
 from django.conf import settings
-from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
@@ -338,42 +337,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe = Recipe.objects.create(**validated_data)
         self._apply_data(recipe)
         return recipe
-
-
-class PasswordSerializer(serializers.Serializer):
-    """Serializer for user password."""
-
-    new_password = serializers.CharField(max_length=150, write_only=True)
-    current_password = serializers.CharField(max_length=150, write_only=True)
-
-    def create(self, validated_data):
-        """Set a new password."""
-
-        user = self.context['request'].user
-        user.set_password(validated_data['new_password'])
-        user.save()
-        return user
-
-    def validate_current_password(self, value):
-        """Current password validation."""
-
-        if self.context['request'].user.check_password(value):
-            return value
-        raise ValidationError('Invalid current password.')
-
-    def validate_new_password(self, value):
-        """New password validation."""
-
-        if not validate_password(value):
-            return value
-        raise ValidationError('Could not validate password')
-
-    def validate(self, data):
-        """Field combo validation."""
-
-        if data['new_password'] == data['current_password']:
-            raise ValidationError('Cannot change password to the same value.')
-        return data
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

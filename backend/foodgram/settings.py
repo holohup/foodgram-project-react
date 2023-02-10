@@ -123,6 +123,12 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'name',
 }
 
+DJOSER = {
+    'SERIALIZERS': {
+        'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
+    },
+}
+
 DEFAULT_RECIPES_LIMIT = 5
 FAVORITED_CACHE_SECONDS_TTL = 60
 

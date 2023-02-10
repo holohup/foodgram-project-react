@@ -6,9 +6,10 @@ class User(AbstractUser):
     """Custom User model."""
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name',)
 
     email = models.EmailField('email address', unique=True, max_length=254)
+    username = models.CharField('username', max_length=150)
     first_name = models.CharField('first name', max_length=150)
     last_name = models.CharField('last name', max_length=150)
     password = models.CharField('password', max_length=150)

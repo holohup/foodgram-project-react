@@ -17,9 +17,8 @@ from api.permissions import (IsAuthorizedOrListCreateOnly,
 from api.serializers import (CustomUserSerializer,
                              CustomUserSubscriptionsSerializer,
                              FavoriteSerializer, IngredientSerializer,
-                             PasswordSerializer, RecipeSerializer,
-                             ShoppingCartSerializer, SubscriptionSerializer,
-                             TagSerializer)
+                             RecipeSerializer, ShoppingCartSerializer,
+                             SubscriptionSerializer, TagSerializer)
 from api.utils import draw_pdf, get_grocery_list
 from api.viewsets import CustomModelViewsSet, CustomReadOnlyModelViewSet
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
@@ -78,23 +77,6 @@ class CustomUserViewSet(CustomModelViewsSet):
         context = {'request': request}
         serializer = SubscriptionSerializer(page, many=True, context=context)
         return paginator.get_paginated_response(serializer.data)
-
-    @action(detail=False)
-    def me(self, request):
-        """Authenticated used info."""
-
-        return Response(self.get_serializer(request.user).data)
-
-    @action(('post',), detail=False)
-    def set_password(self, request, *args, **kwargs):
-        """Set a new password."""
-
-        serializer = PasswordSerializer(
-            data=request.data, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
         """Annotated queryset for the serializer."""

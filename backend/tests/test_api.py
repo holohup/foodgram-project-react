@@ -991,9 +991,7 @@ class URLTests(APITestCase):
     def setUpClass(cls) -> None:
         cls.router_urls = {
             'users-list': '/api/users/',
-            'users-me': '/api/users/me/',
             'users-subscriptions': '/api/users/subscriptions/',
-            'users-set-password': '/api/users/set_password/',
             'tags-list': '/api/tags/',
             'ingredients-list': '/api/ingredients/',
             'recipes-list': '/api/recipes/',
@@ -1005,11 +1003,13 @@ class URLTests(APITestCase):
             'ingredients-detail': '/api/ingredients/1/',
             'recipes-detail': '/api/recipes/1/',
             'recipes-shopping-cart': '/api/recipes/1/shopping_cart/',
-            # 'recipes-favorite': '/api/recipes/1/favorite/',
+            'recipes-favorite': '/api/recipes/1/favorite/',
         }
-        cls.auth_urls = {
+        cls.djoser_urls = {
             'login': '/api/auth/token/login',
             'logout': '/api/auth/token/logout',
+            'users-set-password': '/api/users/set_password/',
+            'users-me': '/api/users/me/',
         }
         cls.users_urls = {
             'users-subscribe': '/api/users/1/subscribe/',
@@ -1044,7 +1044,7 @@ class URLTests(APITestCase):
         for endpoint_name, url in self.router_urls.items():
             with self.subTest(endpoint_name=endpoint_name):
                 self.assertTrue(reverse(endpoint_name).endswith(url))
-        for endpoint_name, url in self.auth_urls.items():
+        for endpoint_name, url in self.djoser_urls.items():
             with self.subTest(endpoint_name=endpoint_name):
                 self.assertEqual(reverse(endpoint_name), url)
         for endpoint_name, url in self.router_detailed_urls.items():
