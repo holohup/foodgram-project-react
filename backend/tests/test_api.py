@@ -264,6 +264,22 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 3)
 
+    # def test_incorrect_recipes_limit_in_subscriptions(self):
+    #     """Tests if recipes_limit argument works as intended."""
+
+    #     url = reverse('users-subscriptions')
+    #     response = self.user_client.get(url + '?recipes_limit=3')
+    #     print(response.data)
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     url = reverse('users-subscribe', kwargs={'pk': self.author.id}) 
+    #     response = self.user_client.post(url + '?recipes_limit=hello', {})
+    #     print(response.data)
+    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    #     url = reverse('users-subscriptions')
+    #     response = self.user_client.get(url + '?recipes_limit=howdy')
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
     def test_users_list_subscription_status(self):
         """Tests if subscriptions display correctly in users list."""
 
