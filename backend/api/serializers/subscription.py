@@ -1,7 +1,7 @@
-from django.conf import settings
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from api.pagination import RecipesLimitPagination
 from api.serializers.recipe import RecipeMiniSerializer
 from users.models import Subscription
 
@@ -69,14 +69,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def get_recipes(self, subscription):
         """Nested recipes serializer with recipes_limit arg."""
 
-        recipes_limit = int(
-            self.context['request'].query_params.get('recipes_limit')
-            or settings.DEFAULT_RECIPES_LIMIT
-        )
-        qs = subscription.author.recipes
+        paginator = RecipesLimitPagination()
+        qs = subscription.author.recipes.order_by('-pub_date')
+        page = paginator.paginate_queryset(qs, request=self.context['request'])
         serializer = RecipeMiniSerializer(
             many=True,
-            instance=qs.order_by('-pub_date')[:recipes_limit],
+            instance=page,
             context=self.context,
         )
         return serializer.data

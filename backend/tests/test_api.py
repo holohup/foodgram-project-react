@@ -264,21 +264,17 @@ class SubscriptionEndpointsTests(AuthorizedUserAuthorPresets):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results'][0]['recipes']), 3)
 
-    # def test_incorrect_recipes_limit_in_subscriptions(self):
-    #     """Tests if recipes_limit argument works as intended."""
+    def test_incorrect_recipes_limit_in_subscriptions(self):
+        """Tests if recipes_limit argument works as intended."""
 
-    #     url = reverse('users-subscriptions')
-    #     response = self.user_client.get(url + '?recipes_limit=3')
-    #     print(response.data)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     url = reverse('users-subscribe', kwargs={'pk': self.author.id}) 
-    #     response = self.user_client.post(url + '?recipes_limit=hello', {})
-    #     print(response.data)
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    #     url = reverse('users-subscriptions')
-    #     response = self.user_client.get(url + '?recipes_limit=howdy')
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-
+        url = reverse('users-subscriptions')
+        Subscription.objects.create(user=self.user, author=self.author)
+        response = self.user_client.get(url + '?recipes_limit=hello', {})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(response.data['results'][0]['recipes']),
+            min(settings.DEFAULT_RECIPES_LIMIT, self.author.recipes.count()),
+        )
 
     def test_users_list_subscription_status(self):
         """Tests if subscriptions display correctly in users list."""
@@ -709,7 +705,9 @@ class RecipesEndpointsTests(APITestCase):
                 self.assertIsInstance(response.data[field], inst)
         url = reverse('recipes-detail', kwargs={'pk': response.data['id']})
         response = self.author_client.put(url, recipe_presets, format='json')
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(
+            response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
+        )
         response = self.user_client.delete(url, recipe_presets, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
