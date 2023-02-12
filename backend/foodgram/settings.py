@@ -125,7 +125,7 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'SERIALIZERS': {
-        'current_user': 'api.serializers.CustomUserSubscriptionsSerializer',
+        'current_user': 'api.serializers.CustomUserSerializer',
     },
 }
 

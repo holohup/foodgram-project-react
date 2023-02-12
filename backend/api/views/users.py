@@ -3,9 +3,7 @@ from rest_framework.decorators import action
 
 from api.pagination import PageLimitPagination
 from api.permissions import IsAuthorizedOrListCreateOnly
-from api.serializers import (CustomUserSerializer,
-                             CustomUserSubscriptionsSerializer,
-                             SubscriptionSerializer)
+from api.serializers import CustomUserSerializer, SubscriptionSerializer
 from api.views.viewsets import CustomModelViewsSet
 from users.models import Subscription, User
 
@@ -13,7 +11,7 @@ from users.models import Subscription, User
 class CustomUserViewSet(CustomModelViewsSet):
     """Viewset for users."""
 
-    serializer_class = CustomUserSubscriptionsSerializer
+    serializer_class = CustomUserSerializer
     permission_classes = (IsAuthorizedOrListCreateOnly,)
     http_method_names = ('get', 'post', 'delete')
 
@@ -56,10 +54,3 @@ class CustomUserViewSet(CustomModelViewsSet):
             user_id=user.id or None, author=OuterRef('id')
         ))
         return queryset.annotate(is_subscribed=value)
-
-    def get_serializer_class(self):
-        """Return a serializer without the is_subscribed field upon reg."""
-
-        if self.action == 'create':
-            return CustomUserSerializer
-        return super().get_serializer_class()

@@ -5,8 +5,7 @@ from api.serializers.recipeingredient import RecipeIngredientSerializer
 from api.serializers.shoppingcart import ShoppingCartSerializer
 from api.serializers.subscription import SubscriptionSerializer
 from api.serializers.tag import TagSerializer
-from api.serializers.user import (CustomUserSerializer,
-                                  CustomUserSubscriptionsSerializer)
+from api.serializers.user import CustomUserSerializer
 
 __all__ = (
     'TagSerializer',
@@ -18,5 +17,4 @@ __all__ = (
     'ShoppingCartSerializer',
     'SubscriptionSerializer',
     'CustomUserSerializer',
-    'CustomUserSubscriptionsSerializer',
 )

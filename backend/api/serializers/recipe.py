@@ -4,7 +4,7 @@ from rest_framework.serializers import ValidationError
 
 from api.serializers.fields import Base64ImageField, TagRelatedField
 from api.serializers.recipeingredient import RecipeIngredientSerializer
-from api.serializers.user import CustomUserSubscriptionsSerializer
+from api.serializers.user import CustomUserSerializer
 from recipes.models import Recipe, RecipeIngredient, Tag
 
 
@@ -20,7 +20,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.BooleanField(
         read_only=True, default=False
     )
-    author = CustomUserSubscriptionsSerializer(read_only=True)
+    author = CustomUserSerializer(read_only=True)
 
     class Meta:
         model = Recipe

@@ -4,8 +4,9 @@ from users.models import User
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    """Serializer for the custom User model."""
+    """Serializer for the custom User model with is_subscribed field."""
 
+    is_subscribed = serializers.BooleanField(default=False, read_only=True)
     password = serializers.CharField(write_only=True, max_length=150)
 
     class Meta:
@@ -17,6 +18,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'password',
+            'is_subscribed'
         )
 
     def create(self, validated_data):
@@ -28,13 +30,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-
-class CustomUserSubscriptionsSerializer(CustomUserSerializer):
-    """Serializer for the custom User model with is_subscribed field."""
-
-    is_subscribed = serializers.BooleanField(default=False, read_only=True)
-
-    class Meta:
-        model = User
-        fields = CustomUserSerializer.Meta.fields + ('is_subscribed',)
-        read_only_fields = fields
+    def to_representation(self, instance):
+        result = super().to_representation(instance)
+        if self.context['view'].action == 'create':
+            result.pop('is_subscribed')
+        return result
