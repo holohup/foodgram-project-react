@@ -1,3 +1,4 @@
+from operator import attrgetter
 from typing import List, NamedTuple
 
 from django.conf import settings
@@ -128,6 +129,6 @@ def draw_pdf(data: List[ShoppingCartItem]) -> str:
     """Create a pdf and return it as a string."""
 
     pdf = ShoppingCartPDF(font_size=10)
-    for item in data:
+    for item in sorted(data, key=attrgetter('name')):
         pdf.add_item(item)
     return pdf.output()

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 
-from api.serializers.recipe import RecipeMiniSerializer
+from api.serializers.recipes import RecipeMiniSerializer
 from recipes.models import ShoppingCart
 
 

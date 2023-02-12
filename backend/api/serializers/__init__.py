@@ -1,11 +1,11 @@
-from api.serializers.favorite import FavoriteSerializer
-from api.serializers.ingredient import IngredientSerializer
-from api.serializers.recipe import RecipeMiniSerializer, RecipeSerializer
-from api.serializers.recipeingredient import RecipeIngredientSerializer
-from api.serializers.shoppingcart import ShoppingCartSerializer
-from api.serializers.subscription import SubscriptionSerializer
-from api.serializers.tag import TagSerializer
-from api.serializers.user import CustomUserSerializer
+from api.serializers.favorites import FavoriteSerializer
+from api.serializers.ingredients import IngredientSerializer
+from api.serializers.recipeingredients import RecipeIngredientSerializer
+from api.serializers.recipes import RecipeMiniSerializer, RecipeSerializer
+from api.serializers.shoppingcarts import ShoppingCartSerializer
+from api.serializers.subscriptions import SubscriptionSerializer
+from api.serializers.tags import TagSerializer
+from api.serializers.users import CustomUserSerializer
 
 __all__ = (
     'TagSerializer',

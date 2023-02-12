@@ -4,7 +4,7 @@ import datetime
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from api.serializers.tag import TagSerializer
+from api.serializers.tags import TagSerializer
 
 
 class Base64ImageField(serializers.ImageField):

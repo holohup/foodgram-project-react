@@ -3,8 +3,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 
 from api.serializers.fields import Base64ImageField, TagRelatedField
-from api.serializers.recipeingredient import RecipeIngredientSerializer
-from api.serializers.user import CustomUserSerializer
+from api.serializers.recipeingredients import RecipeIngredientSerializer
+from api.serializers.users import CustomUserSerializer
 from recipes.models import Recipe, RecipeIngredient, Tag
 
 

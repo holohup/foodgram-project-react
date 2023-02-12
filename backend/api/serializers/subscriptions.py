@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from api.pagination import RecipesLimitPagination
-from api.serializers.recipe import RecipeMiniSerializer
+from api.serializers import RecipeMiniSerializer
 from users.models import Subscription
 
 
@@ -70,8 +70,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         """Nested recipes serializer with recipes_limit arg."""
 
         paginator = RecipesLimitPagination()
-        qs = subscription.author.recipes.order_by('-pub_date')
-        page = paginator.paginate_queryset(qs, request=self.context['request'])
+        queryset = subscription.author.recipes.order_by('-pub_date')
+        page = paginator.paginate_queryset(
+            queryset, request=self.context['request']
+        )
         serializer = RecipeMiniSerializer(
             many=True,
             instance=page,
