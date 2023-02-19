@@ -7,83 +7,82 @@
 [![docker](https://img.shields.io/badge/-Docker-464646?style=flat-square&logo=docker)](https://www.docker.com/)
 [![GitHub%20Actions](https://img.shields.io/badge/-GitHub%20Actions-464646?style=flat-square&logo=GitHub%20actions)](https://github.com/features/actions)
 
-# Дипломный проект - бэкэнд для Foodgram
+# Diploma project - Foodgram backend
 
-## Постановка задачи
+## Problem statement
 
-К имеющемуся фронтэнду нужно написать бэкэнд по подробной спецификации на нужные эндпоинты и описанию проекта. Проект представляет из себя удобный сервис для любителей готовить. На сайт можно добавлять рецепты, ставить к ним тэги, добавлять в избранное, подписываться на любимых авторов, а также добавлять рецепты в списки покупок - сайт автоматически считает, сколько и чего нужно купить и позволяет скачать эту информацию одним файлом. 
+The goal of this project is to build a backend for an existing frontend application, Foodgram. Foodgram is a convenient service for food lovers where users can add recipes, tag them, add them to favorites, follow their favorite authors, and create shopping lists. The site automatically calculates how much of each ingredient is needed and allows users to download this information in a single file.
 
 ### Язык проекта
 
 Проект будет драгоценным камнем в короне моих работ на гитхабе, которые собрались к окончанию курса на Yandex.practicum, поэтому, как и остальные проекты для портфолио, он пишется на английском языке. Для публично-доступной версии будут убраны ссылки на redoc, ингридиенты, любезно предоставленные Яндексом и пр. конфиденциальные данные, будет переведен без купюр и этот текст.
 
-## Технологии
+## Technologies
 
-Проект протестирован на Python 3.7, но автор не видит причин, по которым он не должен работать на более поздних версиях в рамках 3 ветки.
+The project has been tested on Python 3.7, but the author sees no reason why it should not work on later versions within the 3 branch.
 
-## Установка и запуск проекта
+## Installation and project launch
 
-Существует три уровня знакомства с проектом:
+There are three levels of familiarity with the project:
 
-### Посмотреть, как работает
+### To see how it works
 
-Просто зайдите на сайт http://ondeletecascade.ru . На сайте уже загружены рецепты, можно понажимать на кнопки, скачать список покупок и вообще, воспользоваться доступным функционалом.
+Simply visit the website http://ondeletecascade.ru. Recipes are already uploaded to the site, so you can click on buttons, download shopping lists, and use the available functionality.
 
-### Запустить на своем компьютере при помощи docker-compose
+### Running on your own computer using docker-compose
 
-#### Скачиваем и запускаем проект:
+#### Downloading and running the project:
 
 ```
 git clone https://github.com/holohup/foodgram-project-react.git && cd foodgram-project-react/infra && cp .env.sample .env && docker-compose up -d --remove-orphans
 ```
-Обратите внимание: в файле _.env.sample_ лежат тестовые настройки, необходимые для запуска проекта в режиме "посмотреть как работает". Если хочется чего-то большего, отредактируйте их под себя, названия переменных вполне понятные. Если Вы хотите запустить проект на сервере, или вообще любом компьютере, отличным от Вашего текущего, убедитесь, что Вы раскомментировали последнюю строчку этого файла в внесли туда ip-адрес или имя хоста.
+Note: the file .env.sample contains test settings necessary for running the project in "see how it works" mode. If you want something more, edit them to your liking; the variable names are quite clear. If you want to run the project on a server or any computer other than your current one, make sure you uncomment the last line of this file and enter an IP address or hostname.
 
-#### Собираем статику, делаем миграции:
+#### Collect static files, do migrations:
 
 ```
 docker-compose exec -it backend python manage.py collectstatic --noinput && docker-compose exec -it backend python manage.py migrate
 ```
-После успешного запуска, можно ознакомиться с подробной спецификацией на эндпоинты адресу http://localhost/api/docs/
+After a successful launch, you can familiarize yourself with the detailed specification for endpoints at http://localhost/api/docs/
 
-Пока что проект пустой и смотреть особо нечего. Для удобства ознакомления к проекту прилагается файл с готовыми данными - рецептами, пользователями и т.д. Загрузите его:
+For now, the project is empty, so there's not much to see. For convenience, a file with ready-made data - recipes, users, etc. - is attached to the project. Apply it:
 ```
 docker-compose exec -it backend fixtures/presets.sh
 ```
-**!NB** Загружать пресеты нужно до того, как Вы выполнили какие-либо операции с базой - зарегистрировали пользователя, создали рецепт и т.д. Если Вы уже успели что-то сделать на проекте, операцию провернуть не удастся, в таком случае лучше всего будет провести процесс установки заново, очистив компьютер от имеющихся томов, в которых остались старые данные.
+**!NB** You should load presets before performing any operations with the database, such as registering a user or creating a recipe, etc. If you have already done something on the project, it will not be possible to perform this operation. In this case, it is best to start the installation process again, clearing the computer of existing volumes that may contain old data.
 
-Теперь можно:
-- Зайти в качестве администратора по адресу: http://localhost/admin/ с реквизитами **admin@ngs.ru** / **admin** и посмотреть, как там все устроено.
-- Полистать рецепты и зарегистрироваться: http://localhost/
+Now you can:
+- Log in as an administrator at: http://localhost/admin/ with the credentials admin@ngs.ru / admin and see how everything is organized there.
+- Browse recipes and register: http://localhost/
 
-Помимо администратора в базе появится еще один пользователь, не имеющий административных привелегий: **pepin@kqed.com** / **pepinpepinpepin**. Можно пользоваться его реквизитами для того, чтобы тестировать сайт, создавать рецепты, и т.д.
+### Do everything by yourself (the hardest and most honorable way)
 
-
-### Сделать все своими руками (самый трудный и почетный путь)
-
-Необходимо склонировать репозиторий:
+To begin with, you need to clone the repository:
 ```
 git clone https://github.com/holohup/foodgram-project-react.git
 ```
-После чего, пройти по стандартным шагам:
-- Создать виртуальное окружение
-- Установить зависимости из requirements.txt
-- Поднять базу данных postgresql, проект работает с ней
-- Настроить проект под свои задачи в settings.py. 
+Follow these steps after:
+- Install Python: You can download Python from the official website and install it on your system.
+- Create a virtual environment: You can create a virtual environment using virtualenv or pipenv to manage project dependencies.
+- Install the required dependencies.
+```pip install -r requirements.txt```
+- Create a PostgreSQL database: You can create a PostgreSQL database using the command line or a PostgreSQL client like pgAdmin.
+- Edit the settings.py file to your liking. 
 
-После чего, сделать:
+After that, run:
 ```bash
 python manage.py runserver
 ```
-Это будет чистый бэкенд, без nginx и фронта, можно редактировать код и проверять, как работают запросы. Это самый близкий способ знакомства с проектом. Не забудьте установить значение переменной DJANGO_DEBUG_MODE в состояние True в своей системе для того, чтобы весь функционал проекта был доступен без собирания статики и проект работал в режиме DEBUG. 
+This will run the backend without nginx and the frontend. You can edit the code and test how the requests work. This is the closest way to get familiar with the project. Don't forget to set the value of the variable DJANGO_DEBUG_MODE to True in your system so that all the functionality of the project is available without collecting static files and the project works in DEBUG mode.
 
-## Тестирование
+## Testing
 
-Если Вы планируете вносить изменения в проекте, рекомендуется тестировать их прежде, чем они попадут в репозиторий. Для эндпоинтов, основных моделей и функций проекта написаны тесты. Чтобы их запустить, в виртуальном окружении проекта из папки _backend_, или в контейнере backend выполните команду:
+If you are planning to make changes to the project, it is recommended to test them before they are pushed to the repository. Tests have been written for the project's endpoints, main models, and functions. To run them, activate the virtual environment of the project from the backend folder, or in the backend container, run the command:
 ```
 python manage.py test
 ```
-Чтобы исполнить ее в докере:
+To execute it in Docker:
 ```
 docker-compose exec -it backend python manage.py test
 ```
-Также рекомендуется настроить Ваш github action проекта так, чтобы эти тесты автоматически запускались перед деплоем, это позволит избежать многих досадных недоразумений.
+It is also recommended to configure your project's GitHub action to automatically run these tests before deployment. This will help avoid many frustrating misunderstandings.
