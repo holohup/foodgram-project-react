@@ -13,10 +13,6 @@
 
 The goal of this project is to build a backend for an existing frontend application, Foodgram. Foodgram is a convenient service for food lovers where users can add recipes, tag them, add them to favorites, follow their favorite authors, and create shopping lists. The site automatically calculates how much of each ingredient is needed and allows users to download this information in a single file.
 
-### Язык проекта
-
-Проект будет драгоценным камнем в короне моих работ на гитхабе, которые собрались к окончанию курса на Yandex.practicum, поэтому, как и остальные проекты для портфолио, он пишется на английском языке. Для публично-доступной версии будут убраны ссылки на redoc, ингридиенты, любезно предоставленные Яндексом и пр. конфиденциальные данные, будет переведен без купюр и этот текст.
-
 ## Technologies
 
 The project has been tested on Python 3.7, but the author sees no reason why it should not work on later versions within the 3 branch.
