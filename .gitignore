@@ -139,3 +139,4 @@ nr.sh
 backend/media/recipes/*
 dev.sh
 .DS_Store
+data/
